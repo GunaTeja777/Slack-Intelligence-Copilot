@@ -87,14 +87,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
               className="p-4 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-900/60 rounded-xl hover:scale-[1.01] transition-all duration-300"
             >
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-550 uppercase font-bold tracking-wider font-display">{card.label}</span>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 uppercase font-bold tracking-wider font-display">{card.label}</span>
                 <div className="p-1 bg-violet-500/10 rounded-md">
                   {card.icon}
                 </div>
               </div>
               <h4 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight font-display">{card.value}</h4>
               {card.change && (
-                <span className="text-[9px] text-zinc-450 dark:text-zinc-500 font-semibold font-ui flex items-center gap-1 mt-1">
+                <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-semibold font-ui flex items-center gap-1 mt-1">
                   <TrendingUp className="w-3 h-3 text-emerald-500" />
                   {card.change}
                 </span>
@@ -106,8 +106,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
         {/* Chart Card */}
         <div className="p-4 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-900/60 rounded-xl">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] text-zinc-550 uppercase font-bold tracking-wider font-display">Message volume timeline</span>
-            <span className="text-[9px] text-zinc-450 dark:text-zinc-500 font-mono">Last 7 Days</span>
+            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider font-display">Message volume timeline</span>
+            <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono">Last 7 Days</span>
           </div>
 
           {stats.message_volume_trend.length === 0 ? (
@@ -131,7 +131,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
                         style={{ height: `${Math.max(percentage, 5)}%` }} 
                         className="w-full bg-gradient-to-t from-violet-600/90 to-fuchsia-500/95 dark:from-violet-600 dark:to-fuchsia-500 rounded-md transition-all duration-500 group-hover:scale-x-105 group-hover:brightness-110 shadow-sm"
                       />
-                      <span className="text-[8px] text-zinc-500 dark:text-zinc-550 font-semibold mt-1.5 uppercase font-mono tracking-wider">{day.date}</span>
+                      <span className="text-[8px] text-zinc-500 dark:text-zinc-500 font-semibold mt-1.5 uppercase font-mono tracking-wider">{day.date}</span>
                     </div>
                   );
                 })}
@@ -142,7 +142,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
 
         {/* Leaderboard Card */}
         <div className="p-4 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-900/60 rounded-xl">
-          <span className="text-[10px] text-zinc-550 uppercase font-bold tracking-wider font-display block mb-3.5">Top Discussants Ranking</span>
+          <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider font-display block mb-3.5">Top Discussants Ranking</span>
           
           {stats.top_users.length === 0 ? (
             <div className="text-zinc-500 text-center py-4 text-xs font-ui italic">No messaging users indexed yet.</div>
@@ -159,18 +159,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${
                         idx === 0 
-                          ? 'bg-amber-100 text-amber-700 border-amber-250 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' 
+                          ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' 
                           : idx === 1 
                           ? 'bg-zinc-200 text-zinc-700 border-zinc-300 dark:bg-zinc-400/10 dark:text-zinc-300 dark:border-zinc-400/20' 
                           : idx === 2 
-                          ? 'bg-amber-100/40 text-amber-800 border-amber-200 dark:bg-amber-750/15 dark:text-amber-450 dark:border-amber-750/20' 
-                          : 'bg-zinc-150 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-850'
+                          ? 'bg-amber-100/40 text-amber-800 border-amber-200 dark:bg-amber-700/15 dark:text-amber-400 dark:border-amber-700/20' 
+                          : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-800'
                       }`}>
                         {rankText}
                       </span>
                       <span className="text-xs font-bold text-zinc-900 dark:text-zinc-200">{user.user_name}</span>
                     </div>
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-450 font-mono font-semibold">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono font-semibold">
                       {user.message_count} messages
                     </span>
                   </div>

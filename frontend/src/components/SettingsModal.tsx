@@ -64,14 +64,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4.5 border-b border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950/60">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-violet-500/10 rounded-lg text-violet-550 dark:text-violet-400">
+            <div className="p-1.5 bg-violet-500/10 rounded-lg text-violet-500 dark:text-violet-400">
               <Settings className="w-5 h-5 animate-spin-slow" />
             </div>
             <h2 className="text-base font-bold text-zinc-900 dark:text-white font-display">System Configuration Panel</h2>
           </div>
           <button 
             onClick={onClose} 
-            className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white transition-all duration-200 p-1.5 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-250 dark:hover:border-zinc-800"
+            className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white transition-all duration-200 p-1.5 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-300 dark:hover:border-zinc-800"
           >
             <X className="w-4.5 h-4.5" />
           </button>
@@ -85,8 +85,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               onClick={() => setActiveTab('llm')}
               className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all font-ui ${
                 activeTab === 'llm' 
-                  ? 'bg-violet-500/10 text-violet-650 dark:text-violet-300 border-l-2 border-violet-500 shadow-sm' 
-                  : 'text-zinc-500 dark:text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40'
+                  ? 'bg-violet-500/10 text-violet-600 dark:text-violet-300 border-l-2 border-violet-500 shadow-sm' 
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40'
               }`}
             >
               <Key className="w-4 h-4" />
@@ -96,8 +96,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               onClick={() => setActiveTab('slack')}
               className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all font-ui ${
                 activeTab === 'slack' 
-                  ? 'bg-violet-500/10 text-violet-650 dark:text-violet-300 border-l-2 border-violet-500 shadow-sm' 
-                  : 'text-zinc-500 dark:text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40'
+                  ? 'bg-violet-500/10 text-violet-600 dark:text-violet-300 border-l-2 border-violet-500 shadow-sm' 
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40'
               }`}
             >
               <Server className="w-4 h-4" />
@@ -107,8 +107,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               onClick={() => setActiveTab('security')}
               className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all font-ui ${
                 activeTab === 'security' 
-                  ? 'bg-violet-500/10 text-violet-650 dark:text-violet-300 border-l-2 border-violet-500 shadow-sm' 
-                  : 'text-zinc-500 dark:text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40'
+                  ? 'bg-violet-500/10 text-violet-600 dark:text-violet-300 border-l-2 border-violet-500 shadow-sm' 
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40'
               }`}
             >
               <Shield className="w-4 h-4" />
@@ -134,8 +134,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                           onClick={() => setProvider(prov)}
                           className={`px-3 py-3 rounded-xl border text-xs font-bold transition-all capitalize hover:scale-[1.02] duration-200 ${
                             provider === prov
-                              ? 'border-violet-500 bg-violet-500/10 text-violet-650 dark:text-white shadow-md'
-                              : 'border-zinc-200 bg-zinc-50 text-zinc-550 hover:text-zinc-850 dark:border-zinc-900 dark:bg-zinc-950/60 dark:text-zinc-450 dark:hover:bg-zinc-900'
+                              ? 'border-violet-500 bg-violet-500/10 text-violet-600 dark:text-white shadow-md'
+                              : 'border-zinc-200 bg-zinc-50 text-zinc-500 hover:text-zinc-800 dark:border-zinc-900 dark:bg-zinc-950/60 dark:text-zinc-400 dark:hover:bg-zinc-900'
                           }`}
                         >
                           {prov === 'local' ? 'Ollama (Local)' : prov}
@@ -161,23 +161,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                         placeholder="Leave empty to keep existing api key"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-700 focus:outline-none focus:border-violet-500 focus:dark:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 font-ui transition-colors"
+                        className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-700 focus:outline-none focus:border-violet-500 focus:dark:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 font-ui transition-colors"
                       />
-                      <p className="text-[10px] text-zinc-450 dark:text-zinc-550 leading-relaxed font-ui">
+                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-relaxed font-ui">
                         API keys are saved in local SQLite settings and are only transmitted to the authorized LLM server.
                       </p>
                     </div>
                   )}
 
                   {provider === 'local' && (
-                    <div className="bg-zinc-50 dark:bg-[#0b0d13] p-4 rounded-xl border border-zinc-200 dark:border-zinc-900 text-xs text-zinc-600 dark:text-zinc-450 space-y-2 animate-in fade-in duration-300 font-ui leading-relaxed">
+                    <div className="bg-zinc-50 dark:bg-[#0b0d13] p-4 rounded-xl border border-zinc-200 dark:border-zinc-900 text-xs text-zinc-600 dark:text-zinc-400 space-y-2 animate-in fade-in duration-300 font-ui leading-relaxed">
                       <p className="font-bold text-zinc-800 dark:text-zinc-300 font-display">Local LLM Orchestration</p>
                       <p>Ensures zero external network data calls. Requires Ollama server running locally:</p>
-                      <ul className="list-disc pl-4 space-y-1 font-mono text-[10px] text-zinc-650 dark:text-zinc-400">
+                      <ul className="list-disc pl-4 space-y-1 font-mono text-[10px] text-zinc-600 dark:text-zinc-405">
                         <li>Default endpoint: <code>http://localhost:11434</code></li>
                         <li>Target model: <code>llama3</code></li>
                       </ul>
-                      <p className="text-amber-600 dark:text-amber-450/90 font-medium">Verify you have pulled and executed the model: <code>ollama run llama3</code>.</p>
+                      <p className="text-amber-600 dark:text-amber-400/90 font-medium">Verify you have pulled and executed the model: <code>ollama run llama3</code>.</p>
                     </div>
                   )}
                 </div>
@@ -200,9 +200,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                       placeholder="xoxb-..."
                       value={slackToken}
                       onChange={(e) => setSlackToken(e.target.value)}
-                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-700 focus:outline-none focus:border-violet-500 focus:dark:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 font-ui transition-colors"
+                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-700 focus:outline-none focus:border-violet-500 focus:dark:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 font-ui transition-colors"
                     />
-                    <p className="text-[10px] text-zinc-450 dark:text-zinc-555 leading-relaxed font-ui">
+                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-relaxed font-ui">
                       The bot OAuth token must be configured with scopes for listing channels and history (e.g. <code>channels:history</code>, <code>chat:write</code>).
                     </p>
                   </div>
@@ -210,24 +210,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                   <hr className="border-zinc-200 dark:border-zinc-900" />
 
                   <div className="space-y-3.5">
-                    <h3 className="text-xs font-bold text-zinc-750 dark:text-zinc-300 font-display uppercase tracking-wider">MCP Daemon Settings</h3>
+                    <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-display uppercase tracking-wider">MCP Daemon Settings</h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 block mb-1 uppercase tracking-wide font-display">Executable Command</label>
+                        <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 block mb-1 uppercase tracking-wide font-display">Executable Command</label>
                         <input
                           type="text"
                           value={serverCommand}
                           onChange={(e) => setServerCommand(e.target.value)}
-                          className="w-full bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-violet-500/50 font-mono"
+                          className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-violet-500/50 font-mono"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 block mb-1 uppercase tracking-wide font-display">Launch Target</label>
+                        <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 block mb-1 uppercase tracking-wide font-display">Launch Target</label>
                         <input
                           type="text"
                           value={serverArgs}
                           onChange={(e) => setServerArgs(e.target.value)}
-                          className="w-full bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-violet-500/50 font-mono"
+                          className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-violet-500/50 font-mono"
                         />
                       </div>
                     </div>
@@ -239,11 +239,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               {activeTab === 'security' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xs font-bold text-zinc-750 dark:text-zinc-300 font-display uppercase tracking-wider mb-1">Audit Safeguards</h3>
+                    <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-display uppercase tracking-wider mb-1">Audit Safeguards</h3>
                     <p className="text-[11px] text-zinc-500 mb-3.5 font-ui">Protective gateways validating active executions.</p>
                     <div className="bg-zinc-50 dark:bg-zinc-950/60 p-4 border border-zinc-200 dark:border-zinc-900 rounded-xl space-y-4 font-ui leading-relaxed transition-colors">
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 p-1.5 bg-violet-500/10 rounded-lg text-violet-555 dark:text-violet-400 shrink-0">
+                        <div className="mt-0.5 p-1.5 bg-violet-500/10 rounded-lg text-violet-500 dark:text-violet-400 shrink-0">
                           <Shield className="w-4 h-4" />
                         </div>
                         <div>
@@ -255,7 +255,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                       </div>
 
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 p-1.5 bg-violet-500/10 rounded-lg text-violet-555 dark:text-violet-400 shrink-0">
+                        <div className="mt-0.5 p-1.5 bg-violet-500/10 rounded-lg text-violet-500 dark:text-violet-400 shrink-0">
                           <Sliders className="w-4 h-4" />
                         </div>
                         <div>
@@ -276,7 +276,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             <div className="pt-4 border-t border-zinc-200 dark:border-zinc-900 mt-6 flex justify-between items-center font-ui">
               <div className="flex-1 pr-4">
                 {success && (
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-450 font-bold animate-pulse">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold animate-pulse">
                     <Check className="w-4 h-4" /> Settings updated successfully!
                   </div>
                 )}
@@ -290,14 +290,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4.5 py-2 text-xs text-zinc-500 hover:text-zinc-850 dark:text-zinc-450 dark:hover:text-white transition-colors bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 border border-zinc-250 rounded-xl"
+                  className="px-4.5 py-2 text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 border border-zinc-300 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 text-xs text-white dark:text-zinc-950 bg-violet-650 hover:bg-violet-600 dark:bg-violet-400 dark:hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-md disabled:opacity-50 cursor-pointer hover:scale-[1.02]"
+                  className="px-5 py-2 text-xs text-white dark:text-zinc-950 bg-violet-605 hover:bg-violet-600 dark:bg-violet-400 dark:hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-md disabled:opacity-50 cursor-pointer hover:scale-[1.02]"
                 >
                   {saving ? 'Saving...' : 'Save Settings'}
                 </button>

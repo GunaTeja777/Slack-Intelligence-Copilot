@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-1.5">
           <button 
             onClick={onOpenSettings}
-            className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-all duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-800/80 p-2 rounded-lg border border-zinc-250 dark:border-zinc-800/80 hover:border-violet-500/40 hover-glow-purple"
+            className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-all duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-805 p-2 rounded-lg border border-zinc-300 dark:border-zinc-800/80 hover:border-violet-500/40 hover-glow-purple"
             title="Open settings"
           >
             <Key className="w-4 h-4" />
@@ -108,16 +108,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </>
             )}
           </span>
-          <span className="font-semibold text-zinc-550 dark:text-zinc-400 font-ui text-[11px]">
+          <span className="font-semibold text-zinc-500 dark:text-zinc-400 font-ui text-[11px]">
             Server: {connected ? <span className="text-emerald-600 dark:text-emerald-400 font-bold">Connected</span> : <span className="text-rose-600 dark:text-rose-400 font-bold">Offline</span>}
           </span>
         </div>
         {connected ? (
-          <span className="bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-500/20 text-[9px] px-2.5 py-0.5 rounded-full font-bold font-mono">
+          <span className="bg-violet-500/10 text-violet-600 dark:text-violet-305 border border-violet-500/20 text-[9px] px-2.5 py-0.5 rounded-full font-bold font-mono">
             {toolsCount} Tools Active
           </span>
         ) : (
-          <span className="bg-rose-500/10 text-rose-650 dark:text-rose-300 border border-rose-500/20 text-[9px] px-2.5 py-0.5 rounded-full font-bold font-mono">
+          <span className="bg-rose-500/10 text-rose-600 dark:text-rose-300 border border-rose-500/20 text-[9px] px-2.5 py-0.5 rounded-full font-bold font-mono">
             Offline
           </span>
         )}
@@ -149,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               placeholder="Search knowledge logs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white dark:bg-zinc-950/80 border border-zinc-300 dark:border-zinc-800/80 rounded-lg pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-violet-500 focus:dark:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 placeholder-zinc-400 dark:placeholder-zinc-650 transition-all font-ui"
+              className="w-full bg-white dark:bg-zinc-950/80 border border-zinc-300 dark:border-zinc-800/80 rounded-lg pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-violet-500 focus:dark:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 placeholder-zinc-400 dark:placeholder-zinc-500 transition-all font-ui"
             />
           </div>
           <div className="flex items-center justify-between px-1">
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </label>
             <button
               type="submit"
-              className="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-white dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-850 px-2.5 py-0.5 rounded-md hover:border-violet-500/30 transition-all"
+              className="text-[10px] font-bold text-zinc-600 dark:text-zinc-305 hover:text-zinc-900 dark:hover:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 px-2.5 py-0.5 rounded-md hover:border-violet-500/30 transition-all"
             >
               Search
             </button>
@@ -177,12 +177,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Public Channels */}
         <div className="space-y-2">
-          <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider pl-2 flex justify-between items-center font-display">
+          <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider pl-2 flex justify-between items-center font-display">
             <span>Channels ({channels.length})</span>
           </h3>
           <div className="space-y-1">
             {channels.length === 0 ? (
-              <div className="text-[11px] text-zinc-550 dark:text-zinc-600 pl-2 py-1 italic font-ui">No channels synchronized.</div>
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-600 pl-2 py-1 italic font-ui">No channels synchronized.</div>
             ) : (
               channels.map((ch) => {
                 const isActive = selectedChannelId === ch.id;
@@ -195,11 +195,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all duration-200 font-ui ${
                       isActive
-                        ? 'bg-violet-500/10 text-violet-650 dark:text-violet-200 font-bold border-l-2 border-violet-500 pl-2.5 shadow-sm shadow-violet-500/5'
+                        ? 'bg-violet-500/10 text-violet-600 dark:text-violet-200 font-bold border-l-2 border-violet-500 pl-2.5 shadow-sm shadow-violet-500/5'
                         : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/40 hover:translate-x-1'
                     }`}
                   >
-                    <Hash className={`w-3.5 h-3.5 ${isActive ? 'text-violet-550 dark:text-violet-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
+                    <Hash className={`w-3.5 h-3.5 ${isActive ? 'text-violet-500 dark:text-violet-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
                     <span className="truncate">{ch.name}</span>
                   </button>
                 );
@@ -210,19 +210,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Active Members */}
         <div className="space-y-2">
-          <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider pl-2 font-display">
+          <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider pl-2 font-display">
             Workspace Members ({users.length})
           </h3>
           <div className="space-y-1">
             {users.length === 0 ? (
-              <div className="text-[11px] text-zinc-550 dark:text-zinc-600 pl-2 py-1 italic font-ui">No members synced.</div>
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-600 pl-2 py-1 italic font-ui">No members synced.</div>
             ) : (
               users.slice(0, 15).map((user) => (
                 <div 
                   key={user.id} 
-                  className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-250 font-ui hover:bg-zinc-200/20 dark:hover:bg-zinc-900/20 rounded-md transition-all"
+                  className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 font-ui hover:bg-zinc-200/20 dark:hover:bg-zinc-900/20 rounded-md transition-all"
                 >
-                  <div className="w-5 h-5 rounded-md overflow-hidden bg-zinc-250 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800/80 flex items-center justify-center shrink-0 shadow-sm relative">
+                  <div className="w-5 h-5 rounded-md overflow-hidden bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800/80 flex items-center justify-center shrink-0 shadow-sm relative">
                     {user.avatar ? (
                       <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
@@ -235,7 +235,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))
             )}
             {users.length > 15 && (
-              <div className="text-[9px] text-zinc-400 dark:text-zinc-650 pl-3.5 italic font-ui">+{users.length - 15} more members</div>
+              <div className="text-[9px] text-zinc-400 dark:text-zinc-600 pl-3.5 italic font-ui">+{users.length - 15} more members</div>
             )}
           </div>
         </div>
@@ -246,13 +246,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-t border-zinc-200 dark:border-zinc-900/60 bg-zinc-200/20 dark:bg-zinc-950/40 space-y-2">
         <button
           onClick={onOpenAuditLogs}
-          className="w-full flex items-center justify-between px-3.5 py-2.5 bg-white dark:bg-zinc-900/30 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 border border-zinc-250 dark:border-zinc-850 hover:border-violet-500/20 dark:hover:border-violet-500/20 hover-glow-purple transition-all duration-300 rounded-xl text-xs text-zinc-650 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-ui font-medium"
+          className="w-full flex items-center justify-between px-3.5 py-2.5 bg-white dark:bg-zinc-900/30 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-800 hover:border-violet-500/20 dark:hover:border-violet-500/20 hover-glow-purple transition-all duration-300 rounded-xl text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-ui font-medium"
         >
           <span className="flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400 animate-pulse" />
             Security Audit Trail
           </span>
-          <span className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-850 text-[9px] px-2 py-0.5 rounded-md font-mono text-zinc-500 dark:text-zinc-500 font-bold">Vault</span>
+          <span className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-[9px] px-2 py-0.5 rounded-md font-mono text-zinc-500 dark:text-zinc-500 font-bold">Vault</span>
         </button>
       </div>
 
