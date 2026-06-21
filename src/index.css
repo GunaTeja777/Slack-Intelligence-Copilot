@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slack-dark: #1A1D21;
+  --color-slack-sidebar: #1E1F22;
+  --color-slack-purple: #4A154B;
+  --color-slack-green: #2BAC76;
+  --color-slack-hover: #2A2B2F;
+  --color-slack-active: #35373C;
+}
+
+body {
+  @apply bg-slack-dark text-slate-200 antialiased selection:bg-slack-purple selection:text-white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

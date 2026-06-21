@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic>=2.10.1
+pydantic-settings
+python-dotenv
+requests
+slack_sdk
+openai
+google-genai
+numpy
+mcp
