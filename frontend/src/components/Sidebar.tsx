@@ -11,7 +11,7 @@ interface Channel {
 
 interface User {
   id: string;
-  name: string;
+  name: string;        
   real_name?: string;
   display_name?: string;
   avatar?: string;

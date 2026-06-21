@@ -24,11 +24,11 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-zinc-500 py-24 gap-3 animate-pulse font-ui">
         <BarChart3 className="w-10 h-10 text-violet-500 animate-spin" />
-        <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Assembling workspace analytics...</p>
+        <p className="text-xs font-bold text-zinc-650 dark:text-zinc-400">Assembling workspace analytics...</p>
       </div>
     );
   }

@@ -180,14 +180,38 @@ class DashboardManager:
                 # Scale from -1..1 to 0..100 (50 is neutral, >50 positive, <50 negative)
                 sentiment_percentage = int((avg_sentiment + 1) * 50)
                 
+                # Calculate additional stats expected by the frontend
+                total_messages = cursor.execute("SELECT COUNT(*) FROM messages").fetchone()[0] or 0
+                active_users_count = cursor.execute("SELECT COUNT(DISTINCT user_id) FROM messages").fetchone()[0] or 0
+                if active_users_count == 0:
+                    active_users_count = cursor.execute("SELECT COUNT(*) FROM users").fetchone()[0] or 0
+                channel_count = cursor.execute("SELECT COUNT(*) FROM channels").fetchone()[0] or 0
+                rag_doc_count = cursor.execute("SELECT COUNT(*) FROM message_embeddings").fetchone()[0] or 0
+
+                top_users = [
+                    {
+                        "user_name": u["name"],
+                        "message_count": u["message_count"]
+                    }
+                    for u in active_users
+                ]
+
                 return {
                     "ok": True,
                     "active_channels": active_channels,
-                    "active_users": active_users,
+                    "active_users": active_users_count,
+                    "active_users_list": active_users,
                     "message_volume": message_volume,
                     "trending_topics": trending_topics,
                     "sentiment_score": sentiment_percentage,
-                    "open_action_items": action_items
+                    "open_action_items": action_items,
+                    
+                    # Fields expected by the frontend Dashboard component
+                    "total_messages": total_messages,
+                    "channel_count": channel_count,
+                    "rag_doc_count": rag_doc_count,
+                    "top_users": top_users,
+                    "message_volume_trend": message_volume
                 }
         except Exception as e:
             logger.error(f"Error compiling stats: {e}")

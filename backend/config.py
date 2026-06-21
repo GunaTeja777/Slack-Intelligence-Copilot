@@ -21,14 +21,14 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "llama3"
     
     # Database Settings
-    DB_PATH: str = "slack_copilot.db"
+    DB_PATH: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slack_copilot.db")
     
     # MCP Connection Settings
     MCP_SERVER_COMMAND: str = sys.executable
-    MCP_SERVER_ARGS: str = "slack_mcp_server.py"
+    MCP_SERVER_ARGS: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slack_mcp_server.py")
 
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
         env_file_encoding = "utf-8"
 
 settings = Settings()

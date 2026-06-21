@@ -1,7 +1,14 @@
 import os
+import sys
 import json
 import logging
 import asyncio
+
+# Ensure backend directory is in the sys.path so direct imports work
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
@@ -17,7 +24,33 @@ from agent import agent_runner
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("main")
 
-app = FastAPI(title=settings.APP_NAME)
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up FastAPI application...")
+    # Read command and args from settings
+    cmd = settings.MCP_SERVER_COMMAND
+    server_args = settings.MCP_SERVER_ARGS
+    
+    if isinstance(server_args, str):
+        if os.path.exists(server_args):
+            args = [server_args]
+        else:
+            import shlex
+            args = shlex.split(server_args, posix=False) if os.name == 'nt' else shlex.split(server_args)
+            args = [a.strip('"\'') for a in args]
+    else:
+        args = server_args
+        
+    logger.info(f"Connecting to MCP server: {cmd} with args {args}")
+    # Try connecting in background
+    asyncio.create_task(mcp_manager.connect(command=cmd, args=args))
+    yield
+    logger.info("Shutting down FastAPI application...")
+    await mcp_manager.disconnect()
+
+app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
 # Enable CORS for React frontend (Vite defaults to port 5173 or similar)
 app.add_middleware(
@@ -27,23 +60,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Startup event: Connect to default Slack MCP server
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Starting up FastAPI application...")
-    # Read command and args from settings
-    cmd = settings.MCP_SERVER_COMMAND
-    args = settings.MCP_SERVER_ARGS.split() if isinstance(settings.MCP_SERVER_ARGS, str) else settings.MCP_SERVER_ARGS
-    
-    # Try connecting in background
-    asyncio.create_task(mcp_manager.connect(command=cmd, args=args))
-
-# Shutdown event: Disconnect from MCP server
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Shutting down FastAPI application...")
-    await mcp_manager.disconnect()
 
 # Request Models
 class ConnectRequest(BaseModel):
