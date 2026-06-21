@@ -7,11 +7,11 @@ from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from backend.config import settings
-from backend.mcp_client import mcp_manager
-from backend.rag import rag_layer
-from backend.dashboard import dashboard_manager
-from backend.agent import agent_runner
+from config import settings
+from mcp_client import mcp_manager
+from rag import rag_layer
+from dashboard import dashboard_manager
+from agent import agent_runner
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -306,4 +306,4 @@ async def update_settings(req: SettingsUpdateRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

@@ -2,10 +2,10 @@ import asyncio
 import sys
 import os
 
-# Add the workspace directory to sys.path so we can import backend
-sys.path.append(r"c:\Users\tejag\chat analyser")
+# Add the current directory to sys.path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from backend.agent import agent_runner
+from agent import agent_runner
 
 async def main():
     try:

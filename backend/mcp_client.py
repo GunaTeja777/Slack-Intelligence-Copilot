@@ -20,7 +20,7 @@ class MCPClientManager:
         self.tools = []
         self.logs = [] # In-memory list of logs for the execution panel
         self.server_command = "python"
-        self.server_args = ["backend/slack_mcp_server.py"]
+        self.server_args = ["slack_mcp_server.py"]
         self.current_task = None
 
     def add_log(self, level: str, message: str, tool_call: Optional[Dict[str, Any]] = None):
@@ -36,7 +36,7 @@ class MCPClientManager:
             self.logs.pop(0)
         logger.info(f"[{level}] {message}")
 
-    async def connect(self, command: str = "python", args: List[str] = ["backend/slack_mcp_server.py"], env_override: Optional[Dict[str, str]] = None) -> bool:
+    async def connect(self, command: str = "python", args: List[str] = ["slack_mcp_server.py"], env_override: Optional[Dict[str, str]] = None) -> bool:
         """Connect to the MCP server via Stdio."""
         if self.connected:
             await self.disconnect()
@@ -53,7 +53,7 @@ class MCPClientManager:
         # Make sure SLACK_BOT_TOKEN is set
         if "SLACK_BOT_TOKEN" not in env:
             # Fallback check if it was set elsewhere
-            from backend.config import settings
+            from config import settings
             if settings.SLACK_BOT_TOKEN:
                 env["SLACK_BOT_TOKEN"] = settings.SLACK_BOT_TOKEN
 

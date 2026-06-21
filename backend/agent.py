@@ -6,9 +6,9 @@ from typing import Dict, Any, List, Optional, Tuple, AsyncGenerator
 from openai import OpenAI
 from google import genai
 from google.genai import types
-from backend.config import settings
-from backend.mcp_client import mcp_manager
-from backend.rag import rag_layer
+from config import settings
+from mcp_client import mcp_manager
+from rag import rag_layer
 
 logger = logging.getLogger("agent")
 

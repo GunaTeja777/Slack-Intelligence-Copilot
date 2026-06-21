@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional, Tuple
 # pyrefly: ignore [missing-import]
 from google import genai
 from openai import OpenAI
-from backend.config import settings
+from config import settings
 
 logger = logging.getLogger("rag")
 

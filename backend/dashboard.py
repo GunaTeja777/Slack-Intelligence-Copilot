@@ -4,7 +4,7 @@ import logging
 from collections import Counter
 import re
 from typing import Dict, Any, List, Optional
-from backend.config import settings
+from config import settings
 
 logger = logging.getLogger("dashboard")
 
