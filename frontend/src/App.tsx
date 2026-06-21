@@ -401,7 +401,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-slate-100 font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-slack-dark text-slate-100 font-sans">
       
       {/* 1. Left Sidebar */}
       <Sidebar
@@ -421,21 +421,24 @@ export default function App() {
       {/* 2. Center Chat/Search Area */}
       <div className="flex-1 flex flex-col h-full p-4 gap-4 overflow-hidden">
         {/* Header toolbar */}
-        <div className="flex justify-between items-center bg-zinc-900 border border-zinc-850 px-5 py-3 rounded-xl shadow-sm shrink-0">
+        <div className="flex justify-between items-center bg-zinc-950/45 border border-zinc-900/60 px-6 py-4 rounded-2xl shadow-lg backdrop-blur-md shrink-0">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-slack-purple animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full relative flex">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500"></span>
+            </span>
             <div>
-              <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Active Workspace Channel Context</span>
-              <h2 className="text-sm font-bold text-white flex items-center gap-1">
+              <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-widest font-display">Active Workspace Context</span>
+              <h2 className="text-sm font-bold text-white flex items-center gap-1 font-ui">
                 {selectedChannelId 
                   ? `#${channels.find(c => c.id === selectedChannelId)?.name}` 
                   : 'Global Workspace Assistant'}
               </h2>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="text-zinc-500">LLM Provider:</span>
-            <span className="bg-zinc-950 border border-zinc-850 px-2.5 py-1 rounded-md text-white font-mono capitalize">
+          <div className="flex items-center gap-3 text-xs font-ui">
+            <span className="text-zinc-500 font-semibold">LLM:</span>
+            <span className="bg-zinc-950 border border-zinc-900 px-3 py-1 rounded-xl text-zinc-350 font-mono capitalize shadow-inner text-[10px] font-bold tracking-wider">
               {config.provider === 'local' ? 'Ollama' : config.provider}
             </span>
           </div>
@@ -443,45 +446,45 @@ export default function App() {
 
         {/* Dynamic View: Search Results or Chat Area */}
         {searchActive ? (
-          <div className="flex-1 bg-zinc-900 border border-zinc-850 rounded-xl p-6 flex flex-col h-full animate-in fade-in duration-200">
-            <div className="flex justify-between items-center pb-4 border-b border-zinc-850 mb-4 shrink-0">
+          <div className="flex-1 bg-zinc-950/45 border border-zinc-900 rounded-2xl p-6 flex flex-col h-full animate-in fade-in duration-200 shadow-2xl backdrop-blur-xl">
+            <div className="flex justify-between items-center pb-4 border-b border-zinc-900 mb-4 shrink-0 font-ui">
               <div className="flex items-center gap-2">
-                <Search className="w-4 h-4 text-slack-purple" />
-                <h3 className="text-sm font-bold text-white">
+                <Search className="w-4 h-4 text-violet-400 animate-pulse" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-display">
                   Search Results for "{lastSearchQuery}" {searchSemantic && '(Semantic Mode)'}
                 </h3>
               </div>
               <button 
                 onClick={() => setSearchActive(false)}
-                className="text-zinc-500 hover:text-white transition-colors p-1 bg-zinc-950 hover:bg-zinc-850 border border-zinc-850 rounded-lg text-xs"
+                className="text-zinc-500 hover:text-white transition-all p-1.5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 rounded-xl text-[10px] font-bold"
               >
                 Close Search
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-3.5 pr-1.5 scrollbar-thin">
               {searchResults.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-                  <Database className="w-12 h-12 opacity-10 mb-3" />
-                  <p className="text-sm">No matches found in knowledge layer.</p>
-                  <p className="text-xs opacity-75 mt-1">Try database synchronization or modify search term.</p>
+                <div className="flex flex-col items-center justify-center py-24 text-zinc-500 font-ui">
+                  <Database className="w-12 h-12 opacity-15 mb-4 text-zinc-400" />
+                  <p className="text-xs font-semibold text-zinc-400">No matches found in indexed knowledge layer.</p>
+                  <p className="text-[10px] opacity-70 mt-1">Try running a sync cache operation or check keywords.</p>
                 </div>
               ) : (
                 searchResults.map((res, idx) => (
                   <div 
                     key={idx} 
-                    className="p-3.5 bg-zinc-950 rounded-lg border border-zinc-850/60 flex flex-col gap-2 hover:border-zinc-800 transition-colors"
+                    className="p-4 bg-zinc-950/80 rounded-xl border border-zinc-900 hover:border-zinc-800 hover:scale-[1.002] duration-200 transition-all flex flex-col gap-2.5 shadow-sm"
                   >
-                    <div className="flex justify-between items-start text-[10px]">
-                      <span className="text-slack-purple bg-slack-purple/10 border border-slack-purple/10 px-2 py-0.5 rounded font-bold uppercase">
+                    <div className="flex justify-between items-start text-[9px] font-ui">
+                      <span className="text-violet-300 bg-violet-500/10 border border-violet-500/15 px-2.5 py-0.5 rounded-md font-mono font-bold uppercase">
                         #{res.channel_name}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-zinc-400 font-semibold">{res.user_name}</span>
-                        <span className="text-zinc-600 font-mono">Score: {res.score.toFixed(3)}</span>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-zinc-400 font-bold">{res.user_name}</span>
+                        <span className="text-zinc-650 font-mono font-semibold">Match Score: {res.score.toFixed(3)}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-zinc-300 leading-relaxed font-sans">{res.text}</p>
+                    <p className="text-xs text-zinc-300 leading-relaxed font-ui font-medium">{res.text}</p>
                   </div>
                 ))
               )}
@@ -499,16 +502,16 @@ export default function App() {
       </div>
 
       {/* 3. Right Analytics and Debugger split panel */}
-      <div className="w-[460px] h-full p-4 border-l border-zinc-850 flex flex-col gap-4 bg-zinc-950 shrink-0">
+      <div className="w-[460px] h-full p-4 border-l border-zinc-900/80 flex flex-col gap-4 bg-slack-sidebar/45 backdrop-blur-xl shrink-0">
         
         {/* Tab Selection */}
-        <div className="flex bg-zinc-900 border border-zinc-850 p-1.5 rounded-xl gap-1 shrink-0">
+        <div className="flex bg-zinc-950/85 border border-zinc-900 p-1 rounded-xl gap-1 shrink-0 font-ui">
           <button
             onClick={() => setRightPanelTab('dashboard')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 ${
               rightPanelTab === 'dashboard'
-                ? 'bg-slack-purple/15 text-slack-purple font-bold border border-slack-purple/20'
-                : 'text-zinc-500 hover:text-zinc-200'
+                ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+                : 'text-zinc-550 hover:text-zinc-300 hover:bg-zinc-900/20'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -516,10 +519,10 @@ export default function App() {
           </button>
           <button
             onClick={() => setRightPanelTab('tools')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 ${
               rightPanelTab === 'tools'
-                ? 'bg-slack-purple/15 text-slack-purple font-bold border border-slack-purple/20'
-                : 'text-zinc-500 hover:text-zinc-200'
+                ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+                : 'text-zinc-550 hover:text-zinc-300 hover:bg-zinc-900/20'
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
@@ -527,10 +530,10 @@ export default function App() {
           </button>
           <button
             onClick={() => setRightPanelTab('audit')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 ${
               rightPanelTab === 'audit'
-                ? 'bg-slack-purple/15 text-slack-purple font-bold border border-slack-purple/20'
-                : 'text-zinc-500 hover:text-zinc-200'
+                ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+                : 'text-zinc-550 hover:text-zinc-300 hover:bg-zinc-900/20'
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
@@ -549,44 +552,44 @@ export default function App() {
           )}
 
           {rightPanelTab === 'tools' && (
-            <div className="flex flex-col h-full bg-zinc-900 border border-zinc-850 rounded-xl overflow-hidden shadow-xl">
-              <div className="px-5 py-3 border-b border-zinc-850 bg-zinc-950/40 flex justify-between items-center">
+            <div className="flex flex-col h-full bg-zinc-950/45 border border-zinc-900/60 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="px-5 py-3.5 border-b border-zinc-900 bg-zinc-950/60 flex justify-between items-center font-display">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Available MCP Tools</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Discovered: {tools.length}</span>
+                <span className="text-[9px] text-zinc-550 font-mono font-bold">Discovered: {tools.length}</span>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[300px] border-b border-zinc-850">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 max-h-[300px] border-b border-zinc-900/60 scrollbar-thin">
                 {tools.length === 0 ? (
-                  <div className="text-xs text-zinc-500 text-center py-8">No tools loaded. Verify MCP connection.</div>
+                  <div className="text-xs text-zinc-550 text-center py-10 font-ui italic">No tools registered. Verify server connection.</div>
                 ) : (
                   tools.map((t, idx) => (
-                    <div key={idx} className="p-3 bg-zinc-950 rounded-lg border border-zinc-850 space-y-1">
+                    <div key={idx} className="p-3.5 bg-zinc-950/80 rounded-xl border border-zinc-900/80 hover:border-zinc-850 transition-colors space-y-1">
                       <span className="text-xs font-bold font-mono text-zinc-300">{t.name}</span>
-                      <p className="text-[10px] text-zinc-500 leading-normal">{t.description}</p>
+                      <p className="text-[10px] text-zinc-500 leading-relaxed font-ui">{t.description}</p>
                     </div>
                   ))
                 )}
               </div>
               
-              <div className="px-5 py-3 bg-zinc-950/40 border-b border-zinc-850 flex justify-between items-center">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Live JSON-RPC Stdio Streams</span>
+              <div className="px-5 py-3 bg-zinc-950/60 border-b border-zinc-900 flex justify-between items-center font-display">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Stdio RPC Stream Console</span>
                 <button 
                   onClick={() => setMcpLogs([])} 
-                  className="text-[10px] text-zinc-500 hover:text-white"
+                  className="text-[9px] text-zinc-500 hover:text-white font-bold"
                 >
-                  Clear Logs
+                  Clear stream
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 font-mono text-[9px] bg-zinc-950 text-green-400 space-y-1.5 max-h-[320px]">
+              <div className="flex-1 overflow-y-auto p-4 font-mono text-[9px] bg-black/60 text-emerald-400 space-y-2 max-h-[320px] scrollbar-thin">
                 {mcpLogs.length === 0 ? (
-                  <div className="text-zinc-650 text-center py-12">Waiting for Stdio JSON-RPC logs...</div>
+                  <div className="text-zinc-700 text-center py-16 font-mono text-[10px]">Listening for Stdio JSON-RPC frames...</div>
                 ) : (
                   mcpLogs.map((log, idx) => (
-                    <div key={idx} className="border-b border-zinc-900 pb-1.5">
-                      <span className="text-zinc-500">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>{' '}
-                      <span className={log.level === 'ERROR' ? 'text-red-400' : log.level === 'WARNING' ? 'text-amber-400' : 'text-green-400'}>
+                    <div key={idx} className="border-b border-zinc-900/40 pb-1.5 font-mono">
+                      <span className="text-zinc-550 font-mono">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>{' '}
+                      <span className={log.level === 'ERROR' ? 'text-rose-400 font-bold' : log.level === 'WARNING' ? 'text-amber-400 font-bold' : 'text-emerald-400 font-semibold'}>
                         {log.level}:
                       </span>{' '}
-                      {log.message}
+                      <span className="text-zinc-350">{log.message}</span>
                     </div>
                   ))
                 )}

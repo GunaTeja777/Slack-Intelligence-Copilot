@@ -25,7 +25,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
   const [apiKey, setApiKey] = useState('');
   const [slackToken, setSlackToken] = useState('');
   const [serverCommand, setServerCommand] = useState(config.server_command || 'python');
-  const [serverArgs, setServerArgs] = useState(config.server_args?.join(' ') || 'backend/slack_mcp_server.py');
+  const [serverArgs, setServerArgs] = useState(config.server_args?.join(' ') || 'slack_mcp_server.py');
   const [activeTab, setActiveTab] = useState<'llm' | 'slack' | 'security'>('llm');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -47,8 +47,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
         server_args: serverArgs
       });
       setSuccess(true);
-      setApiKey(''); // Clear raw key input after saving
-      setSlackToken(''); // Clear raw token input after saving
+      setApiKey('');
+      setSlackToken('');
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save settings');
@@ -58,33 +58,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl flex flex-col h-[550px] animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-zinc-950/80 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[560px] backdrop-blur-2xl animate-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-800 bg-zinc-950/50">
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-slack-purple" />
-            <h2 className="text-lg font-semibold text-white">System Settings</h2>
+        <div className="flex justify-between items-center px-6 py-4.5 border-b border-zinc-900 bg-zinc-950/60">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-violet-500/10 rounded-lg text-violet-400">
+              <Settings className="w-5 h-5 animate-spin-slow" />
+            </div>
+            <h2 className="text-base font-bold text-white font-display">System Configuration Panel</h2>
           </div>
           <button 
             onClick={onClose} 
-            className="text-zinc-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-zinc-850"
+            className="text-zinc-400 hover:text-white transition-all duration-200 p-1.5 rounded-xl hover:bg-zinc-900 border border-transparent hover:border-zinc-800"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4.5 h-4.5" />
           </button>
         </div>
 
         {/* Inner Content Split */}
         <div className="flex-1 flex overflow-hidden">
           {/* Side tabs */}
-          <div className="w-48 border-r border-zinc-850 p-4 flex flex-col gap-1 bg-zinc-950/20">
+          <div className="w-48 border-r border-zinc-900 p-4 flex flex-col gap-1 bg-zinc-950/30">
             <button
               onClick={() => setActiveTab('llm')}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all font-ui ${
                 activeTab === 'llm' 
-                  ? 'bg-slack-purple/10 text-slack-purple border-l-2 border-slack-purple font-semibold' 
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50'
+                  ? 'bg-violet-500/10 text-violet-300 border-l-2 border-violet-500 shadow-sm shadow-violet-500/5' 
+                  : 'text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/40'
               }`}
             >
               <Key className="w-4 h-4" />
@@ -92,10 +94,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             </button>
             <button
               onClick={() => setActiveTab('slack')}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all font-ui ${
                 activeTab === 'slack' 
-                  ? 'bg-slack-purple/10 text-slack-purple border-l-2 border-slack-purple font-semibold' 
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50'
+                  ? 'bg-violet-500/10 text-violet-300 border-l-2 border-violet-500 shadow-sm shadow-violet-500/5' 
+                  : 'text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/40'
               }`}
             >
               <Server className="w-4 h-4" />
@@ -103,14 +105,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             </button>
             <button
               onClick={() => setActiveTab('security')}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all font-ui ${
                 activeTab === 'security' 
-                  ? 'bg-slack-purple/10 text-slack-purple border-l-2 border-slack-purple font-semibold' 
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50'
+                  ? 'bg-violet-500/10 text-violet-300 border-l-2 border-violet-500 shadow-sm shadow-violet-500/5' 
+                  : 'text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/40'
               }`}
             >
               <Shield className="w-4 h-4" />
-              Security
+              Security Gate
             </button>
           </div>
 
@@ -120,20 +122,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               
               {/* Tab: LLM Settings */}
               {activeTab === 'llm' && (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
-                    <h3 className="text-sm font-semibold text-zinc-300 mb-1">Model Provider</h3>
-                    <p className="text-xs text-zinc-500 mb-3">Choose which LLM power the Slack agent queries.</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <h3 className="text-xs font-bold text-zinc-300 font-display uppercase tracking-wider mb-1">Model Provider</h3>
+                    <p className="text-[11px] text-zinc-500 mb-3.5 font-ui">Choose which AI reasoning service will power the Slack agent.</p>
+                    <div className="grid grid-cols-3 gap-2 font-ui">
                       {['gemini', 'openai', 'local'].map((prov) => (
                         <button
                           key={prov}
                           type="button"
                           onClick={() => setProvider(prov)}
-                          className={`px-4 py-3 rounded-lg border text-sm font-medium transition-all capitalize ${
+                          className={`px-3 py-3 rounded-xl border text-xs font-bold transition-all capitalize hover:scale-[1.02] duration-200 ${
                             provider === prov
-                              ? 'border-slack-purple bg-slack-purple/5 text-white shadow-sm shadow-slack-purple/10'
-                              : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850'
+                              ? 'border-violet-500 bg-violet-500/10 text-white shadow-lg shadow-violet-500/5'
+                              : 'border-zinc-900 bg-zinc-950/60 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900'
                           }`}
                         >
                           {prov === 'local' ? 'Ollama (Local)' : prov}
@@ -143,39 +145,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                   </div>
 
                   {provider !== 'local' && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-semibold text-zinc-300">
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="flex justify-between items-center font-ui">
+                        <label className="text-xs font-bold text-zinc-300">
                           {provider === 'gemini' ? 'Gemini API Key' : 'OpenAI API Key'}
                         </label>
                         {config.has_api_key && (
-                          <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium">
+                          <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold font-mono">
                             <Check className="w-3 h-3" /> Configured
                           </span>
                         )}
                       </div>
                       <input
                         type="password"
-                        placeholder="Leave blank to keep current key"
+                        placeholder="Leave empty to keep existing api key"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-slack-purple"
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 font-ui"
                       />
-                      <p className="text-[10px] text-zinc-500 leading-normal">
-                        Your key is saved locally in sqlite cache settings and never transmitted to external services except the respective LLM servers.
+                      <p className="text-[10px] text-zinc-550 leading-relaxed font-ui">
+                        API keys are saved in local SQLite settings and are only transmitted to the authorized LLM server.
                       </p>
                     </div>
                   )}
 
                   {provider === 'local' && (
-                    <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-850 text-xs text-zinc-400 space-y-2 animate-in fade-in duration-200">
-                      <p className="font-semibold text-zinc-300">Local LLM Configuration</p>
-                      <p>Requires Ollama running on your local machine.</p>
-                      <ul className="list-disc pl-4 space-y-1">
-                        <li>Endpoint URL: <code className="bg-zinc-900 px-1 py-0.5 rounded text-zinc-300">http://localhost:11434</code></li>
-                        <li>Model Target: <code className="bg-zinc-900 px-1 py-0.5 rounded text-zinc-300">llama3</code> (configurable in backend/config.py)</li>
+                    <div className="bg-[#0b0d13] p-4 rounded-xl border border-zinc-900 text-xs text-zinc-450 space-y-2 animate-in fade-in duration-300 font-ui leading-relaxed">
+                      <p className="font-bold text-zinc-300 font-display">Local LLM Orchestration</p>
+                      <p>Ensures zero external network data calls. Requires Ollama server running locally:</p>
+                      <ul className="list-disc pl-4 space-y-1 font-mono text-[10px] text-zinc-400">
+                        <li>Default endpoint: <code>http://localhost:11434</code></li>
+                        <li>Target model: <code>llama3</code></li>
                       </ul>
-                      <p className="text-amber-400/80 font-medium mt-1">Make sure you have run: <code>ollama run llama3</code> to download the model.</p>
+                      <p className="text-amber-450/90 font-medium">Verify you have pulled and executed the model: <code>ollama run llama3</code>.</p>
                     </div>
                   )}
                 </div>
@@ -183,13 +185,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
 
               {/* Tab: Slack Settings */}
               {activeTab === 'slack' && (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-semibold text-zinc-300">Slack Bot User OAuth Token</label>
+                    <div className="flex justify-between items-center font-ui">
+                      <label className="text-xs font-bold text-zinc-300">Slack Bot User OAuth Token</label>
                       {config.slack_token_configured && (
-                        <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium">
-                          <Check className="w-3 h-3" /> Token Loaded
+                        <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold font-mono">
+                          <Check className="w-3 h-3" /> Activated
                         </span>
                       )}
                     </div>
@@ -198,35 +200,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                       placeholder="xoxb-..."
                       value={slackToken}
                       onChange={(e) => setSlackToken(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-slack-purple"
+                      className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-700 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 font-ui"
                     />
-                    <p className="text-[10px] text-zinc-500 leading-normal">
-                      The bot OAuth token must have permission to read/write messages and list channels (e.g. <code>channels:read</code>, <code>channels:history</code>, <code>chat:write</code>).
+                    <p className="text-[10px] text-zinc-550 leading-relaxed font-ui">
+                      The bot OAuth token must be configured with scopes for listing channels and history (e.g. <code>channels:history</code>, <code>chat:write</code>).
                     </p>
                   </div>
 
-                  <hr className="border-zinc-850" />
+                  <hr className="border-zinc-900" />
 
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-300 mb-1">MCP Connection Settings</h3>
-                    <p className="text-xs text-zinc-500 mb-3">Settings to connect our MCP client to the Slack tool server.</p>
+                  <div className="space-y-3.5">
+                    <h3 className="text-xs font-bold text-zinc-300 font-display uppercase tracking-wider">MCP Daemon Settings</h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Executable Command</label>
+                        <label className="text-[10px] font-bold text-zinc-500 block mb-1 uppercase tracking-wide font-display">Executable Command</label>
                         <input
                           type="text"
                           value={serverCommand}
                           onChange={(e) => setServerCommand(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slack-purple"
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/50 font-mono"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Launch Arguments</label>
+                        <label className="text-[10px] font-bold text-zinc-500 block mb-1 uppercase tracking-wide font-display">Launch Target</label>
                         <input
                           type="text"
                           value={serverArgs}
                           onChange={(e) => setServerArgs(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slack-purple"
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/50 font-mono"
                         />
                       </div>
                     </div>
@@ -238,29 +239,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
               {activeTab === 'security' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-zinc-300 mb-1">Write Action Protections</h3>
-                    <p className="text-xs text-zinc-500 mb-3">Audit logs and permission safeguards configurations.</p>
-                    <div className="bg-zinc-950 p-4 border border-zinc-850 rounded-lg space-y-3">
+                    <h3 className="text-xs font-bold text-zinc-300 font-display uppercase tracking-wider mb-1">Audit Safeguards</h3>
+                    <p className="text-[11px] text-zinc-500 mb-3.5 font-ui">Protective gateways validating active executions.</p>
+                    <div className="bg-zinc-950/60 p-4 border border-zinc-900 rounded-xl space-y-4 font-ui leading-relaxed">
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 p-1 bg-slack-purple/10 rounded-md text-slack-purple">
+                        <div className="mt-0.5 p-1.5 bg-violet-500/10 rounded-lg text-violet-400 shrink-0">
                           <Shield className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-zinc-300">Confirmation Gateways Enabled</p>
-                          <p className="text-[11px] text-zinc-500 mt-0.5 leading-normal">
-                            All write operations (sending channel posts, posting replies) MUST trigger a UI-level confirmation box displaying a full preview of target destination and text content. No model can directly write to Slack.
+                          <p className="text-xs font-bold text-zinc-300">Confirmation Gateways Enabled</p>
+                          <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
+                            No agent reasoning loops can post outbound messages directly. All write invocations route through the UI sandbox, waiting for human approval.
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 p-1 bg-slack-purple/10 rounded-md text-slack-purple">
+                        <div className="mt-0.5 p-1.5 bg-violet-500/10 rounded-lg text-violet-400 shrink-0">
                           <Sliders className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-zinc-300">Secure Vault Storage</p>
-                          <p className="text-[11px] text-zinc-500 mt-0.5 leading-normal">
-                            Bot tokens and API keys are stored solely in the local SQLite file settings table. They are never written to source logs or sent to intermediate platforms.
+                          <p className="text-xs font-bold text-zinc-300">Secure Vault Storage</p>
+                          <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
+                            Bot tokens and API keys are stored solely in the local SQLite table. They are never written to source logs or sent to intermediate platforms.
                           </p>
                         </div>
                       </div>
@@ -272,15 +273,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             </div>
 
             {/* Save Area */}
-            <div className="pt-6 border-t border-zinc-850 mt-6 flex justify-between items-center">
+            <div className="pt-4 border-t border-zinc-900 mt-6 flex justify-between items-center font-ui">
               <div className="flex-1 pr-4">
                 {success && (
-                  <div className="flex items-center gap-1.5 text-xs text-green-400 font-semibold animate-bounce">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold animate-pulse">
                     <Check className="w-4 h-4" /> Settings updated successfully!
                   </div>
                 )}
                 {error && (
-                  <div className="flex items-center gap-1.5 text-xs text-red-400 font-semibold">
+                  <div className="flex items-center gap-1.5 text-xs text-rose-400 font-bold">
                     <AlertCircle className="w-4 h-4" /> {error}
                   </div>
                 )}
@@ -289,14 +290,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors bg-zinc-900 border border-zinc-800 rounded-lg"
+                  className="px-4.5 py-2 text-xs text-zinc-400 hover:text-white transition-colors bg-zinc-900 border border-zinc-800 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 text-sm text-white bg-slack-purple hover:bg-slack-purple/95 transition-colors font-semibold rounded-lg shadow-md shadow-slack-purple/15 flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-2 text-xs text-zinc-950 bg-violet-400 hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-lg shadow-violet-500/10 flex items-center gap-2 disabled:opacity-50 cursor-pointer hover:scale-[1.02]"
                 >
                   {saving ? 'Saving...' : 'Save Settings'}
                 </button>

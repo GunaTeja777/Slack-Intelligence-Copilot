@@ -1,23 +1,97 @@
 @import "tailwindcss";
 
 @theme {
-  --color-slack-dark: #1A1D21;
-  --color-slack-sidebar: #1E1F22;
-  --color-slack-purple: #4A154B;
-  --color-slack-green: #2BAC76;
-  --color-slack-hover: #2A2B2F;
-  --color-slack-active: #35373C;
+  --color-slack-dark: #060709;
+  --color-slack-sidebar: #0b0c10;
+  --color-slack-purple: #8b5cf6;
+  --color-slack-green: #10b981;
+  --color-slack-hover: #161920;
+  --color-slack-active: #202433;
 }
 
 body {
-  @apply bg-slack-dark text-slate-200 antialiased selection:bg-slack-purple selection:text-white;
+  @apply bg-slack-dark text-slate-200 antialiased selection:bg-slack-purple/30 selection:text-white;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-image: radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+  background-attachment: fixed;
 }
 
-/* Custom scrollbars */
+/* Custom premium Typography */
+.font-display {
+  font-family: 'Outfit', sans-serif;
+}
+
+.font-ui {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Glassmorphism panels and cards */
+.glass-panel {
+  background: rgba(11, 12, 16, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.glass-card {
+  background: rgba(22, 25, 32, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(22, 25, 32, 0.65);
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 12px 30px -10px rgba(139, 92, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Hover glow states */
+.hover-glow-purple:hover {
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.hover-glow-green:hover {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+/* Custom Pulsing Glow animations */
+@keyframes pulse-glow-green {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(16, 185, 129, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    transform: scale(1.05);
+  }
+}
+
+.pulse-glow-green {
+  animation: pulse-glow-green 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow-purple {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(139, 92, 246, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+    transform: scale(1.05);
+  }
+}
+
+.pulse-glow-purple {
+  animation: pulse-glow-purple 2s infinite ease-in-out;
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -25,10 +99,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(139, 92, 246, 0.25);
 }
