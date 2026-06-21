@@ -99,27 +99,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950/60 border border-zinc-900/80 rounded-2xl overflow-hidden shadow-2xl relative">
+    <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-900/80 rounded-2xl overflow-hidden shadow-xl dark:shadow-2xl relative transition-colors duration-300">
       
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-xl mx-auto">
+          <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-8 max-w-xl mx-auto">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center mb-6 text-white shadow-lg shadow-violet-500/10 animate-bounce">
               <Sparkles className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2 font-display">Welcome to Slack Intelligence Copilot</h3>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-2 font-display">Welcome to Slack Intelligence Copilot</h3>
             <p className="text-xs text-zinc-500 leading-relaxed mb-8 max-w-sm font-ui">
               I can analyze channel history, search logs, cluster topics, track decisions, and draft posts—acting as a secure intelligence layer for your team.
             </p>
             <div className="flex flex-col gap-2.5 w-full">
-              <span className="text-[10px] text-zinc-550 uppercase tracking-widest font-bold font-display">Suggested Prompts</span>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-550 uppercase tracking-widest font-bold font-display">Suggested Prompts</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {suggestions.map((sug, idx) => (
                   <button
                     key={idx}
                     onClick={() => setInput(sug.text)}
-                    className="p-3.5 text-left bg-zinc-900/30 hover:bg-zinc-900/60 border border-zinc-900/60 rounded-xl text-xs text-zinc-450 hover:text-white hover:border-violet-500/30 hover-glow-purple transition-all duration-300 font-ui text-ellipsis overflow-hidden whitespace-nowrap"
+                    className="p-3.5 text-left bg-zinc-100 hover:bg-zinc-200/60 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-900/60 rounded-xl text-xs text-zinc-650 dark:text-zinc-450 hover:text-zinc-900 dark:hover:text-white hover:border-violet-550/30 dark:hover:border-violet-500/30 hover-glow-purple transition-all duration-300 font-ui text-ellipsis overflow-hidden whitespace-nowrap"
                   >
                     {sug.label}
                   </button>
@@ -137,12 +137,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-3 duration-300`}
               >
                 {/* User Message / Assistant Card */}
-                <div className={`flex gap-3 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`flex gap-3 max-w-[90%] sm:max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                   {/* Avatar */}
                   <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border transition-all ${
                     isUser 
-                      ? 'bg-zinc-900 border-zinc-800 text-zinc-400 font-bold' 
-                      : 'bg-gradient-to-tr from-violet-600/10 to-fuchsia-600/10 border-violet-500/20 text-violet-400 font-bold'
+                      ? 'bg-zinc-200 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold' 
+                      : 'bg-gradient-to-tr from-violet-600/10 to-fuchsia-600/10 border-violet-500/20 text-violet-600 dark:text-violet-400 font-bold'
                   }`}>
                     {isUser ? 'U' : <Sparkles className="w-4.5 h-4.5" />}
                   </div>
@@ -151,8 +151,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   <div className="flex flex-col gap-2">
                     <div className={`p-4 rounded-2xl ${
                       isUser 
-                        ? 'bg-violet-600/10 text-slate-100 border border-violet-500/25 shadow-sm rounded-tr-none shadow-violet-600/5' 
-                        : 'bg-zinc-900/55 text-slate-200 border border-zinc-850/80 shadow-md rounded-tl-none backdrop-blur-sm'
+                        ? 'bg-violet-600 dark:bg-violet-650/15 text-white dark:text-slate-100 border border-transparent dark:border-violet-500/25 shadow-sm rounded-tr-none shadow-violet-600/5' 
+                        : 'bg-zinc-100 dark:bg-zinc-900/55 text-zinc-850 dark:text-slate-200 border border-zinc-200/80 dark:border-zinc-850/80 shadow-md rounded-tl-none backdrop-blur-sm'
                     }`}>
                       
                       {/* Message Content */}
@@ -162,12 +162,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
                       {/* Display Thoughts (Collapsible/Status) */}
                       {!isUser && msg.thoughts && msg.thoughts.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-zinc-950 space-y-2 bg-[#0a0c10] p-3.5 rounded-xl border border-zinc-900/60 shadow-inner">
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2 font-display">
-                            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
+                        <div className="mt-4 pt-3 border-t border-zinc-250 dark:border-zinc-950 space-y-2 bg-zinc-200/40 dark:bg-[#0a0c10] p-3.5 rounded-xl border border-zinc-250 dark:border-zinc-900/60 shadow-inner">
+                          <p className="text-[10px] font-bold text-zinc-550 uppercase tracking-wider flex items-center gap-2 font-display">
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 dark:bg-violet-400 animate-pulse"></span>
                             Reasoning thoughts ({msg.thoughts.length})
                           </p>
-                          <div className="text-[11px] text-zinc-400 font-mono space-y-1.5 pl-2.5 border-l-2 border-violet-500/20 leading-relaxed max-h-[140px] overflow-y-auto">
+                          <div className="text-[11px] text-zinc-650 dark:text-zinc-400 font-mono space-y-1.5 pl-2.5 border-l-2 border-violet-500/30 dark:border-violet-500/20 leading-relaxed max-h-[140px] overflow-y-auto">
                             {msg.thoughts.map((th, thIdx) => (
                               <div key={thIdx} className="opacity-95">{th}</div>
                             ))}
@@ -178,7 +178,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       {/* Display Tool Executions */}
                       {!isUser && msg.steps && msg.steps.length > 0 && (
                         <div className="mt-4 space-y-2">
-                          <p className="text-[10px] font-bold text-zinc-550 uppercase tracking-widest font-display">
+                          <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest font-display">
                             MCP Tool Call pipeline
                           </p>
                           <div className="space-y-2">
@@ -189,39 +189,39 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                               const isCompleted = step.status === 'completed';
                               
                               return (
-                                <div key={stepIdx} className="bg-zinc-950/40 rounded-xl border border-zinc-900/60 overflow-hidden text-xs transition-all hover:border-zinc-800">
+                                <div key={stepIdx} className="bg-white dark:bg-zinc-950/40 rounded-xl border border-zinc-200 dark:border-zinc-900/60 overflow-hidden text-xs transition-all hover:border-zinc-300 dark:hover:border-zinc-800">
                                   <button
                                     onClick={() => toggleStep(msgIdx, stepIdx)}
-                                    className="w-full flex justify-between items-center px-4 py-2.5 bg-zinc-950/70 hover:bg-zinc-900/40 transition-colors"
+                                    className="w-full flex justify-between items-center px-4 py-2.5 bg-zinc-50 dark:bg-zinc-950/70 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
                                   >
-                                    <span className="font-mono text-zinc-300 flex items-center gap-2">
-                                      <span className={`w-2 h-2 rounded-full relative flex`}>
+                                    <span className="font-mono text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                                      <span className="w-2 h-2 rounded-full relative flex">
                                         {isPending ? (
                                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                                         ) : null}
                                         <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                                          isPending ? 'bg-amber-400' : isCompleted ? 'bg-emerald-500' : 'bg-rose-500'
+                                          isPending ? 'bg-amber-405' : isCompleted ? 'bg-emerald-500' : 'bg-rose-500'
                                         }`}></span>
                                       </span>
                                       {step.tool}
                                     </span>
                                     <div className="flex items-center gap-2 font-ui">
                                       <span className={`text-[10px] uppercase font-bold tracking-wider font-mono ${
-                                        isPending ? 'text-amber-400' : isCompleted ? 'text-emerald-400' : 'text-rose-400'
+                                        isPending ? 'text-amber-600 dark:text-amber-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                                       }`}>{step.status}</span>
-                                      {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                                      {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-400 dark:text-zinc-550" /> : <ChevronDown className="w-4 h-4 text-zinc-400 dark:text-zinc-550" />}
                                     </div>
                                   </button>
                                   {isExpanded && (
-                                    <div className="p-4 border-t border-zinc-900 bg-zinc-950 font-mono text-[10px] space-y-3.5">
+                                    <div className="p-4 border-t border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950 font-mono text-[10px] space-y-3.5">
                                       <div>
-                                        <span className="text-zinc-550 font-bold block mb-1 uppercase tracking-wider text-[9px]">Arguments:</span>
-                                        <pre className="bg-[#0b0c10] p-3 rounded-lg text-zinc-400 border border-zinc-900 overflow-x-auto">{JSON.stringify(step.arguments, null, 2)}</pre>
+                                        <span className="text-zinc-500 dark:text-zinc-550 font-bold block mb-1 uppercase tracking-wider text-[9px]">Arguments:</span>
+                                        <pre className="bg-white dark:bg-[#0b0c10] p-3 rounded-lg text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-905 overflow-x-auto">{JSON.stringify(step.arguments, null, 2)}</pre>
                                       </div>
                                       {step.result && (
                                         <div>
-                                          <span className="text-zinc-550 font-bold block mb-1 uppercase tracking-wider text-[9px]">Result Payload:</span>
-                                          <pre className="bg-[#0b0c10] p-3 rounded-lg text-zinc-400 border border-zinc-900 overflow-x-auto max-h-[160px] overflow-y-auto">{JSON.stringify(step.result, null, 2)}</pre>
+                                          <span className="text-zinc-500 dark:text-zinc-550 font-bold block mb-1 uppercase tracking-wider text-[9px]">Result Payload:</span>
+                                          <pre className="bg-white dark:bg-[#0b0c10] p-3 rounded-lg text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-905 overflow-x-auto max-h-[160px] overflow-y-auto">{JSON.stringify(step.result, null, 2)}</pre>
                                         </div>
                                       )}
                                     </div>
@@ -235,13 +235,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
                       {/* Display Pending Confirmation Banner */}
                       {!isUser && msg.pendingConfirmation && (
-                        <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-4 animate-in zoom-in-95 duration-300">
+                        <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/25 dark:border-amber-500/20 rounded-2xl space-y-4 animate-in zoom-in-95 duration-300">
                           <div className="flex items-start gap-3">
-                            <div className="p-1.5 bg-amber-500/10 rounded-lg text-amber-400 shrink-0">
+                            <div className="p-1.5 bg-amber-550/10 rounded-lg text-amber-600 dark:text-amber-400 shrink-0">
                               <ShieldAlert className="w-5 h-5 animate-pulse" />
                             </div>
                             <div>
-                              <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest font-display">Confirm Outbound Message Posting</h4>
+                              <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest font-display">Confirm Outbound Message Posting</h4>
                               <p className="text-[10px] text-zinc-500 mt-1 font-ui leading-normal">
                                 Security Gateway Verification Required. Verify target details and refine message text.
                               </p>
@@ -251,24 +251,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                           <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3 text-[10px]">
                               <div>
-                                <span className="text-zinc-550 block uppercase font-bold font-display tracking-wider">Target Channel</span>
-                                <span className="font-mono text-zinc-350 bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-900 block mt-1">{msg.pendingConfirmation.preview.channel_id}</span>
+                                <span className="text-zinc-500 dark:text-zinc-555 block uppercase font-bold font-display tracking-wider">Target Channel</span>
+                                <span className="font-mono text-zinc-700 dark:text-zinc-350 bg-white dark:bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-900 block mt-1">{msg.pendingConfirmation.preview.channel_id}</span>
                               </div>
                               {msg.pendingConfirmation.preview.thread_ts && (
                                 <div>
-                                  <span className="text-zinc-550 block uppercase font-bold font-display tracking-wider">Thread TS</span>
-                                  <span className="font-mono text-zinc-350 bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-900 block mt-1">{msg.pendingConfirmation.preview.thread_ts}</span>
+                                  <span className="text-zinc-500 dark:text-zinc-555 block uppercase font-bold font-display tracking-wider">Thread TS</span>
+                                  <span className="font-mono text-zinc-700 dark:text-zinc-350 bg-white dark:bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-900 block mt-1">{msg.pendingConfirmation.preview.thread_ts}</span>
                                 </div>
                               )}
                             </div>
 
                             <div>
-                              <span className="text-zinc-555 block uppercase font-bold text-[10px] font-display tracking-wider mb-1">Message Body</span>
+                              <span className="text-zinc-500 dark:text-zinc-555 block uppercase font-bold text-[10px] font-display tracking-wider mb-1">Message Body</span>
                               <textarea
                                 value={editingText === '' ? msg.pendingConfirmation.preview.text : editingText}
                                 onChange={(e) => setEditingText(e.target.value)}
                                 rows={4}
-                                className="w-full bg-zinc-950 border border-zinc-850 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/20 font-ui leading-relaxed"
+                                className="w-full bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-850 rounded-xl p-3 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-550/20 font-ui leading-relaxed"
                               />
                             </div>
                           </div>
@@ -276,7 +276,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                           <div className="flex gap-2.5 justify-end">
                             <button
                               onClick={onCancelAction}
-                              className="px-3.5 py-2 text-[11px] text-zinc-400 hover:text-white bg-zinc-900/60 border border-zinc-800 rounded-xl transition-colors font-medium font-ui"
+                              className="px-3.5 py-2 text-[11px] text-zinc-500 hover:text-zinc-800 dark:text-zinc-450 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200/60 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-colors font-medium font-ui"
                             >
                               Reject & Cancel
                             </button>
@@ -287,13 +287,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 msgIdx
                               )}
                               disabled={confirmingIdx === msgIdx}
-                              className="px-4.5 py-2 text-[11px] text-zinc-950 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 transition-all rounded-xl font-bold flex items-center gap-1.5 shadow-lg shadow-amber-500/10 font-ui hover:scale-[1.02] duration-200"
+                              className="px-4.5 py-2 text-[11px] text-white dark:text-zinc-950 bg-amber-550 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 disabled:opacity-50 transition-all rounded-xl font-bold flex items-center gap-1.5 shadow-lg shadow-amber-500/10 font-ui hover:scale-[1.02] duration-200 cursor-pointer"
                             >
                               {confirmingIdx === msgIdx ? (
                                 <>
                                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                                   Posting...
-                                  </>
+                                </>
                               ) : (
                                 <>
                                   <CheckCircle2 className="w-4 h-4" />
@@ -312,11 +312,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <div className="flex items-center gap-2 pl-2">
                         <button
                           onClick={() => handleCopy(msg.content, msgIdx)}
-                          className="text-zinc-550 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-900 flex items-center gap-1 text-[10px] font-ui"
+                          className="text-zinc-450 hover:text-zinc-700 dark:text-zinc-550 dark:hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-1 text-[10px] font-ui"
                         >
                           {copiedIndex === msgIdx ? (
                             <>
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                               Copied
                             </>
                           ) : (
@@ -338,10 +338,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         {/* Loading Spinner for Streaming Answer */}
         {loading && (
           <div className="flex gap-4 justify-start animate-pulse">
-            <div className="w-8 h-8 rounded-lg bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+            <div className="w-8 h-8 rounded-lg bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-violet-500 dark:text-violet-400">
               <Sparkles className="w-4.5 h-4.5 animate-spin" />
             </div>
-            <div className="bg-zinc-900/60 p-4.5 rounded-2xl border border-zinc-850/60 max-w-[80%]">
+            <div className="bg-zinc-100 dark:bg-zinc-900/60 p-4.5 rounded-2xl border border-zinc-200 dark:border-zinc-850/60 max-w-[80%]">
               <div className="flex gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-violet-500/50 animate-bounce"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-violet-500/50 animate-bounce delay-100"></span>
@@ -355,20 +355,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* Input Bar */}
-      <form onSubmit={handleSend} className="p-4 border-t border-zinc-900/60 bg-zinc-950/20">
-        <div className="flex gap-3 bg-zinc-950 border border-zinc-850 focus-within:border-violet-500/40 rounded-xl px-4 py-3 transition-all duration-300 focus-within:shadow-lg focus-within:shadow-violet-500/5">
+      <form onSubmit={handleSend} className="p-4 border-t border-zinc-200 dark:border-zinc-900/60 bg-zinc-50 dark:bg-zinc-950/20">
+        <div className="flex gap-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-850 focus-within:border-violet-500 focus-within:dark:border-violet-500/40 rounded-xl px-4 py-3 transition-all duration-300 focus-within:shadow-md focus-within:dark:shadow-violet-500/5">
           <input
             type="text"
             placeholder="Ask Slack Intelligence Copilot... (e.g. Summarize recent decisions in #general)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            className="flex-1 bg-transparent text-sm text-white placeholder-zinc-650 focus:outline-none disabled:opacity-50 font-ui"
+            className="flex-1 bg-transparent text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-650 focus:outline-none disabled:opacity-50 font-ui"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="p-2 text-white bg-violet-600 hover:bg-violet-500 hover:scale-105 active:scale-95 transition-all duration-200 rounded-lg disabled:opacity-20 shadow-md shadow-violet-600/10 hover:shadow-violet-500/25 flex items-center justify-center cursor-pointer"
+            className="p-2 text-white bg-violet-650 hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-500 hover:scale-105 active:scale-95 transition-all duration-200 rounded-lg disabled:opacity-20 shadow-md shadow-violet-600/10 dark:shadow-violet-500/25 flex items-center justify-center cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
           </button>

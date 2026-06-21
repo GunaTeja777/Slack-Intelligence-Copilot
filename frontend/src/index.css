@@ -10,10 +10,14 @@
 }
 
 body {
-  @apply bg-slack-dark text-slate-200 antialiased selection:bg-slack-purple/30 selection:text-white;
+  @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-slate-200 antialiased transition-colors duration-300 selection:bg-violet-500/20 dark:selection:bg-violet-500/30 dark:selection:text-white;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-image: radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+  background-image: radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.04) 0%, transparent 60%);
   background-attachment: fixed;
+}
+
+.dark body {
+  background-image: radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
 }
 
 /* Custom premium Typography */
@@ -27,34 +31,24 @@ body {
 
 /* Glassmorphism panels and cards */
 .glass-panel {
-  background: rgba(11, 12, 16, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  @apply bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-900/60 transition-all duration-300;
 }
 
 .glass-card {
-  background: rgba(22, 25, 32, 0.4);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  @apply bg-white dark:bg-zinc-900/40 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-900/60 transition-all duration-350;
 }
 
 .glass-card:hover {
-  background: rgba(22, 25, 32, 0.65);
-  border-color: rgba(139, 92, 246, 0.35);
-  box-shadow: 0 12px 30px -10px rgba(139, 92, 246, 0.2);
-  transform: translateY(-2px);
+  @apply bg-white dark:bg-zinc-900/65 border-violet-500/30 dark:border-violet-500/35 shadow-lg shadow-violet-500/5 dark:shadow-2xl dark:shadow-violet-500/10 -translate-y-0.5;
 }
 
 /* Hover glow states */
 .hover-glow-purple:hover {
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.4);
+  @apply shadow-lg dark:shadow-2xl border-violet-500/30 dark:border-violet-500/40;
 }
 
 .hover-glow-green:hover {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.4);
+  @apply shadow-lg dark:shadow-2xl border-emerald-500/30 dark:border-emerald-500/40;
 }
 
 /* Custom Pulsing Glow animations */
@@ -64,8 +58,8 @@ body {
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
-    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+    transform: scale(1.03);
   }
 }
 
@@ -79,8 +73,8 @@ body {
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
-    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+    transform: scale(1.03);
   }
 }
 
@@ -99,10 +93,9 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 9999px;
+  @apply bg-zinc-300 dark:bg-zinc-800 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.25);
+  @apply bg-violet-400/50 dark:bg-violet-500/30;
 }
