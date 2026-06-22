@@ -176,9 +176,71 @@ class SafeConnection:
 def get_db_connection() -> SafeConnection:
     if settings.DATABASE_URL:
         _init_postgres()
+        import urllib.parse
         db_url = settings.DATABASE_URL.strip("'\"\r\n \t")
         if db_url.startswith("postgres://"):
             db_url = db_url.replace("postgres://", "postgresql://", 1)
+            
+        # Extract project ref from environment (variables, JWT tokens, or fallback) to auto-heal pooler usernames
+        project_ref = None
+        pg_host = os.environ.get("POSTGRES_HOST")
+        if pg_host and ".supabase.co" in pg_host:
+            project_ref = pg_host.split(".supabase.co")[0]
+            if "." in project_ref:
+                project_ref = project_ref.split(".")[-1]
+        if not project_ref:
+            sub_url = os.environ.get("SUPABASE_URL")
+            if sub_url and "supabase.co" in sub_url:
+                project_ref = sub_url.replace("https://", "").replace("http://", "").split(".supabase.co")[0]
+        if not project_ref:
+            # Try to decode JWT from keys
+            import base64
+            import json
+            for key_name in ["SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]:
+                token = os.environ.get(key_name)
+                if token:
+                    try:
+                        parts = token.split('.')
+                        if len(parts) >= 2:
+                            payload_b64 = parts[1]
+                            # Add base64 padding
+                            payload_b64 += '=' * (4 - len(payload_b64) % 4)
+                            payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode('utf-8'))
+                            ref = payload.get("ref")
+                            if ref:
+                                project_ref = ref
+                                break
+                    except Exception as e:
+                        logger.warning(f"Failed decoding JWT from {key_name}: {e}")
+        if not project_ref:
+            # Fallback to the known project reference
+            project_ref = "tkmhawkynnveqckwllyl"
+                
+        # Parse, decode, and properly encode the password to prevent authentication errors
+        if "://" in db_url:
+            scheme, rest = db_url.split("://", 1)
+            if "@" in rest:
+                userinfo, hostinfo = rest.rsplit("@", 1)
+                username = userinfo
+                password = None
+                if ":" in userinfo:
+                    username, password = userinfo.split(":", 1)
+                
+                postgres_pass = os.environ.get("POSTGRES_PASSWORD") or os.environ.get("DB_PASSWORD")
+                if postgres_pass:
+                    password = urllib.parse.quote(postgres_pass, safe='')
+                elif password:
+                    password = urllib.parse.quote(urllib.parse.unquote(password), safe='')
+                
+                if "pooler.supabase.com" in hostinfo and project_ref:
+                    if "." not in username:
+                        username = f"{username}.{project_ref}"
+                        
+                if password:
+                    db_url = f"{scheme}://{username}:{password}@{hostinfo}"
+                else:
+                    db_url = f"{scheme}://{username}@{hostinfo}"
+
         raw_conn = psycopg2.connect(db_url)
         return SafeConnection(raw_conn, is_postgres=True)
     else:
