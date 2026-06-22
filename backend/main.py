@@ -227,9 +227,11 @@ async def get_status(current_user: str = Depends(get_current_user)):
     
     manager = mcp_manager.get(current_user)
     if not manager.connected and slack_token:
-        logger.info(f"Auto-connecting MCP server for user {current_user}...")
-        cmd = settings.MCP_SERVER_COMMAND
-        server_args = settings.MCP_SERVER_ARGS
+        cmd = rag_layer.get_user_setting(current_user, "server_command", settings.MCP_SERVER_COMMAND)
+        server_args = rag_layer.get_user_setting(current_user, "server_args", None)
+        if server_args is None:
+            server_args = settings.MCP_SERVER_ARGS
+        
         if isinstance(server_args, str):
             import shlex
             args = shlex.split(server_args, posix=False) if os.name == 'nt' else shlex.split(server_args)

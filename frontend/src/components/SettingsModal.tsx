@@ -62,9 +62,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
     setError('');
     setTestResults(null);
     try {
+      const storedToken = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
       const res = await fetch(`${API_BASE}/settings/test`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           provider,
           api_key: apiKey || undefined,
