@@ -692,7 +692,7 @@ export default function App() {
               onClick={() => setRightPanelTab('dashboard')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 cursor-pointer ${
                 rightPanelTab === 'dashboard'
-                  ? 'bg-white dark:bg-violet-500/10 text-violet-650 dark:text-violet-300 border border-zinc-200 dark:border-violet-500/20 shadow-sm'
+                  ? 'bg-white dark:bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-zinc-200 dark:border-violet-500/20 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:bg-zinc-200/30 dark:hover:bg-zinc-900/20'
               }`}
             >

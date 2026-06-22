@@ -462,7 +462,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                 <button
                   type="submit"
                   disabled={saving || testing}
-                  className="px-5 py-2 text-xs text-white dark:text-zinc-950 bg-violet-650 hover:bg-violet-700 dark:bg-violet-400 dark:hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-md disabled:opacity-50 cursor-pointer hover:scale-[1.02] flex items-center gap-1"
+                  className="px-5 py-2 text-xs text-white dark:text-zinc-950 bg-violet-600 hover:bg-violet-700 dark:bg-violet-400 dark:hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-md disabled:opacity-50 cursor-pointer hover:scale-[1.02] flex items-center gap-1"
                 >
                   {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   {saving ? 'Saving...' : 'Save Settings'}
