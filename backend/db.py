@@ -241,6 +241,21 @@ def get_db_connection() -> SafeConnection:
                 else:
                     db_url = f"{scheme}://{username}@{hostinfo}"
 
+        # Mask connection URL for safe logging
+        masked_url = db_url
+        if "://" in db_url:
+            try:
+                m_scheme, m_rest = db_url.split("://", 1)
+                if "@" in m_rest:
+                    m_userinfo, m_hostinfo = m_rest.rsplit("@", 1)
+                    m_username = m_userinfo
+                    if ":" in m_userinfo:
+                        m_username, _ = m_userinfo.split(":", 1)
+                    masked_url = f"{m_scheme}://{m_username}:***@{m_hostinfo}"
+            except Exception:
+                masked_url = "[Error masking URL]"
+        logger.info(f"Connecting to database: {masked_url}")
+
         raw_conn = psycopg2.connect(db_url)
         return SafeConnection(raw_conn, is_postgres=True)
     else:
