@@ -28,25 +28,26 @@ class LocalKnowledgeLayer:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
-            # Check and drop legacy tables if they don't have multi-tenant 'username' column
-            for table in ['channels', 'users', 'messages', 'message_embeddings', 'audit_logs']:
-                try:
-                    cursor.execute(f"PRAGMA table_info({table})")
-                    cols = [r[1] for r in cursor.fetchall()]
-                    if cols and 'username' not in cols:
-                        logger.info(f"Dropping legacy table {table} to upgrade to multi-tenant schema...")
-                        cursor.execute(f"DROP TABLE IF EXISTS {table}")
-                except Exception as e:
-                    logger.warning(f"Error checking table {table} schema: {e}")
+            if not conn.is_postgres:
+                # Check and drop legacy tables if they don't have multi-tenant 'username' column
+                for table in ['channels', 'users', 'messages', 'message_embeddings', 'audit_logs']:
+                    try:
+                        cursor.execute(f"PRAGMA table_info({table})")
+                        cols = [r[1] for r in cursor.fetchall()]
+                        if cols and 'username' not in cols:
+                            logger.info(f"Dropping legacy table {table} to upgrade to multi-tenant schema...")
+                            cursor.execute(f"DROP TABLE IF EXISTS {table}")
+                    except Exception as e:
+                        logger.warning(f"Error checking table {table} schema: {e}")
 
-            try:
-                cursor.execute("PRAGMA table_info(app_users)")
-                app_user_cols = [r[1] for r in cursor.fetchall()]
-                if app_user_cols and 'salt' not in app_user_cols:
-                    logger.warning("Dropping incompatible app_users table missing password salt column.")
-                    cursor.execute("DROP TABLE IF EXISTS app_users")
-            except Exception as e:
-                logger.warning(f"Error checking app_users schema: {e}")
+                try:
+                    cursor.execute("PRAGMA table_info(app_users)")
+                    app_user_cols = [r[1] for r in cursor.fetchall()]
+                    if app_user_cols and 'salt' not in app_user_cols:
+                        logger.warning("Dropping incompatible app_users table missing password salt column.")
+                        cursor.execute("DROP TABLE IF EXISTS app_users")
+                except Exception as e:
+                    logger.warning(f"Error checking app_users schema: {e}")
             
             # Channels table
             cursor.execute("""
