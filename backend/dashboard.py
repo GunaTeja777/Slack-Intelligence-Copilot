@@ -15,8 +15,8 @@ class DashboardManager:
     def _get_connection(self):
         return get_db_connection()
 
-    def get_stats(self) -> Dict[str, Any]:
-        """Calculate and return dashboard statistics."""
+    def get_stats(self, username: str) -> Dict[str, Any]:
+        """Calculate and return dashboard statistics for the specified username."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -25,10 +25,11 @@ class DashboardManager:
                 channel_counts = cursor.execute("""
                     SELECT c.id, c.name, c.num_members, COUNT(m.ts) as msg_count
                     FROM channels c
-                    LEFT JOIN messages m ON c.id = m.channel_id
+                    LEFT JOIN messages m ON c.username = m.username AND c.id = m.channel_id
+                    WHERE c.username = ?
                     GROUP BY c.id, c.name, c.num_members
                     ORDER BY msg_count DESC
-                """).fetchall()
+                """, (username,)).fetchall()
                 
                 active_channels = [
                     {
@@ -44,11 +45,12 @@ class DashboardManager:
                 user_counts = cursor.execute("""
                     SELECT u.id, u.real_name, u.display_name, u.avatar, COUNT(m.ts) as msg_count
                     FROM users u
-                    JOIN messages m ON u.id = m.user_id
+                    JOIN messages m ON u.username = m.username AND u.id = m.user_id
+                    WHERE u.username = ?
                     GROUP BY u.id, u.real_name, u.display_name, u.avatar
                     ORDER BY msg_count DESC
                     LIMIT 10
-                """).fetchall()
+                """, (username,)).fetchall()
                 
                 active_users = [
                     {
@@ -61,11 +63,11 @@ class DashboardManager:
                 ]
                 
                 # 3. Message Volume over time (grouped by day)
-                # In Slack, 'ts' is a unix timestamp as string (e.g. '1718873099.123456')
                 if settings.DATABASE_URL:
                     volume_query = """
                         SELECT DATE(TO_TIMESTAMP(CAST(ts AS DOUBLE PRECISION))) as day, COUNT(*) as count
                         FROM messages
+                        WHERE username = ?
                         GROUP BY day
                         ORDER BY day ASC
                         LIMIT 30
@@ -74,11 +76,12 @@ class DashboardManager:
                     volume_query = """
                         SELECT date(datetime(CAST(ts AS REAL), 'unixepoch')) as day, COUNT(*) as count
                         FROM messages
+                        WHERE username = ?
                         GROUP BY day
                         ORDER BY day ASC
                         LIMIT 30
                     """
-                volume_rows = cursor.execute(volume_query).fetchall()
+                volume_rows = cursor.execute(volume_query, (username,)).fetchall()
                 
                 message_volume = [
                     {"date": row["day"], "count": row["count"]}
@@ -88,20 +91,19 @@ class DashboardManager:
                 # 4. Open Action Items
                 # Search for messages containing actionable words
                 action_keywords = ["action item", "todo", "to-do", "need to", "must do", "follow up", "assign"]
-                action_pattern = "|".join(action_keywords)
                 
-                action_rows = cursor.execute(f"""
+                action_rows = cursor.execute("""
                     SELECT m.ts, m.text, m.channel_id, c.name as channel_name, m.user_id, u.real_name
                     FROM messages m
-                    JOIN channels c ON m.channel_id = c.id
-                    LEFT JOIN users u ON m.user_id = u.id
-                    WHERE m.text LIKE '%todo%' 
+                    JOIN channels c ON m.username = c.username AND m.channel_id = c.id
+                    LEFT JOIN users u ON m.username = u.username AND m.user_id = u.id
+                    WHERE m.username = ? AND (m.text LIKE '%todo%' 
                        OR m.text LIKE '%action item%'
                        OR m.text LIKE '%need to%'
-                       OR m.text LIKE '%follow up%'
+                       OR m.text LIKE '%follow up%')
                     ORDER BY m.ts DESC
                     LIMIT 20
-                """).fetchall()
+                """, (username,)).fetchall()
                 
                 action_items = []
                 for row in action_rows:
@@ -129,7 +131,7 @@ class DashboardManager:
                 
                 # 5. Trending Topics / Keywords
                 # Collect all message texts
-                message_texts = cursor.execute("SELECT text FROM messages").fetchall()
+                message_texts = cursor.execute("SELECT text FROM messages WHERE username = ?", (username,)).fetchall()
                 all_text = " ".join([r["text"] for r in message_texts])
                 
                 # Basic tokenization
@@ -189,13 +191,13 @@ class DashboardManager:
                 sentiment_percentage = int((avg_sentiment + 1) * 50)
                 
                 # Calculate additional stats expected by the frontend
-                total_messages = cursor.execute("SELECT COUNT(*) as cnt FROM messages").fetchone()["cnt"] or 0
-                active_users_count = cursor.execute("SELECT COUNT(DISTINCT user_id) as cnt FROM messages").fetchone()["cnt"] or 0
+                total_messages = cursor.execute("SELECT COUNT(*) as cnt FROM messages WHERE username = ?", (username,)).fetchone()["cnt"] or 0
+                active_users_count = cursor.execute("SELECT COUNT(DISTINCT user_id) as cnt FROM messages WHERE username = ?", (username,)).fetchone()["cnt"] or 0
                 if active_users_count == 0:
-                    active_users_count = cursor.execute("SELECT COUNT(*) as cnt FROM users").fetchone()["cnt"] or 0
-                channel_count = cursor.execute("SELECT COUNT(*) as cnt FROM channels").fetchone()["cnt"] or 0
-                rag_doc_count = cursor.execute("SELECT COUNT(*) as cnt FROM message_embeddings").fetchone()["cnt"] or 0
-
+                    active_users_count = cursor.execute("SELECT COUNT(*) as cnt FROM users WHERE username = ?", (username,)).fetchone()["cnt"] or 0
+                channel_count = cursor.execute("SELECT COUNT(*) as cnt FROM channels WHERE username = ?", (username,)).fetchone()["cnt"] or 0
+                rag_doc_count = cursor.execute("SELECT COUNT(*) as cnt FROM message_embeddings WHERE username = ?", (username,)).fetchone()["cnt"] or 0
+ 
                 top_users = [
                     {
                         "user_name": u["name"],
@@ -203,7 +205,7 @@ class DashboardManager:
                     }
                     for u in active_users
                 ]
-
+ 
                 return {
                     "ok": True,
                     "active_channels": active_channels,
