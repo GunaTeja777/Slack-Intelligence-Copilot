@@ -101,6 +101,36 @@ export default function App() {
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000/api/v1';
 
+  const resetWorkspaceState = () => {
+    setConnected(false);
+    setTools([]);
+    setMcpLogs([]);
+    setConfig({
+      server_command: 'python',
+      server_args: ['backend/slack_mcp_server.py'],
+      provider: 'gemini',
+      has_api_key: false,
+      slack_token_configured: false
+    });
+    setSyncing(false);
+    setChannels([]);
+    setUsers([]);
+    setSelectedChannelId(null);
+    setMessages([]);
+    setLoading(false);
+    setDashboardStats(null);
+    setDashboardLoading(false);
+    setRightPanelTab('dashboard');
+    setAuditLogs([]);
+    setSearchResults([]);
+    setSearchActive(false);
+    setLastSearchQuery('');
+    setSearchSemantic(false);
+    setShowSettings(false);
+    setSidebarOpen(false);
+    setRightPanelOpen(false);
+  };
+
   // Session verification and handlers
   useEffect(() => {
     const verifyToken = async () => {
@@ -146,6 +176,7 @@ export default function App() {
   }, [token, authChecking]);
 
   const handleAuthSuccess = (newToken: string, newUsername: string) => {
+    resetWorkspaceState();
     localStorage.setItem('auth_token', newToken);
     localStorage.setItem('auth_username', newUsername);
     setToken(newToken);
@@ -155,6 +186,7 @@ export default function App() {
   const handleLogoutLocal = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_username');
+    resetWorkspaceState();
     setToken(null);
     setUsername(null);
   };

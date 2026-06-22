@@ -42,9 +42,9 @@ class SafeCursor:
             # Translate SQLite-specific INSERT OR REPLACE to PostgreSQL ON CONFLICT
             if 'INSERT OR REPLACE INTO channels' in query:
                 query = """
-                    INSERT INTO channels (id, name, topic, purpose, num_members)
-                    VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO UPDATE SET
+                    INSERT INTO channels (username, id, name, topic, purpose, num_members)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (username, id) DO UPDATE SET
                         name = EXCLUDED.name,
                         topic = EXCLUDED.topic,
                         purpose = EXCLUDED.purpose,
@@ -52,9 +52,9 @@ class SafeCursor:
                 """
             elif 'INSERT OR REPLACE INTO users' in query:
                 query = """
-                    INSERT INTO users (id, name, real_name, display_name, avatar, email)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO UPDATE SET
+                    INSERT INTO users (username, id, name, real_name, display_name, avatar, email)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (username, id) DO UPDATE SET
                         name = EXCLUDED.name,
                         real_name = EXCLUDED.real_name,
                         display_name = EXCLUDED.display_name,
@@ -63,9 +63,9 @@ class SafeCursor:
                 """
             elif 'INSERT OR REPLACE INTO messages' in query:
                 query = """
-                    INSERT INTO messages (ts, channel_id, user_id, text, thread_ts, reply_count, json_data)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (ts) DO UPDATE SET
+                    INSERT INTO messages (username, ts, channel_id, user_id, text, thread_ts, reply_count, json_data)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (username, ts) DO UPDATE SET
                         channel_id = EXCLUDED.channel_id,
                         user_id = EXCLUDED.user_id,
                         text = EXCLUDED.text,
@@ -75,9 +75,9 @@ class SafeCursor:
                 """
             elif 'INSERT OR REPLACE INTO message_embeddings' in query:
                 query = """
-                    INSERT INTO message_embeddings (ts, channel_id, embedding)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (ts) DO UPDATE SET
+                    INSERT INTO message_embeddings (username, ts, channel_id, embedding)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (username, ts) DO UPDATE SET
                         channel_id = EXCLUDED.channel_id,
                         embedding = EXCLUDED.embedding
                 """
@@ -103,6 +103,13 @@ class SafeCursor:
                     ON CONFLICT (token) DO UPDATE SET
                         username = EXCLUDED.username,
                         expires_at = EXCLUDED.expires_at
+                """
+            elif 'INSERT OR REPLACE INTO user_settings' in query:
+                query = """
+                    INSERT INTO user_settings (username, key, value)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (username, key) DO UPDATE SET
+                        value = EXCLUDED.value
                 """
             
             # Case-insensitive LIKE dialect translation

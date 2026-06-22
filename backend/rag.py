@@ -24,7 +24,7 @@ class LocalKnowledgeLayer:
         return get_db_connection()
 
     def _init_db(self):
-        """Initialize the SQLite database schema."""
+        """Initialize the database schema and upgrade legacy single-user tables."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
@@ -38,6 +38,15 @@ class LocalKnowledgeLayer:
                         cursor.execute(f"DROP TABLE IF EXISTS {table}")
                 except Exception as e:
                     logger.warning(f"Error checking table {table} schema: {e}")
+
+            try:
+                cursor.execute("PRAGMA table_info(app_users)")
+                app_user_cols = [r[1] for r in cursor.fetchall()]
+                if app_user_cols and 'salt' not in app_user_cols:
+                    logger.warning("Dropping incompatible app_users table missing password salt column.")
+                    cursor.execute("DROP TABLE IF EXISTS app_users")
+            except Exception as e:
+                logger.warning(f"Error checking app_users schema: {e}")
             
             # Channels table
             cursor.execute("""
@@ -114,9 +123,9 @@ class LocalKnowledgeLayer:
             # App Users table (for authentication credentials)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS app_users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
+                    username TEXT PRIMARY KEY,
                     password_hash TEXT NOT NULL,
+                    salt TEXT NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
