@@ -15,7 +15,7 @@ load_dotenv(dotenv_path)
 async def main():
     try:
         gemini_key = os.environ.get("GEMINI_API_KEY")
-        async for chunk in agent_runner.run_query("hello", [], "gemini", gemini_key):
+        async for chunk in agent_runner.run_query("hello", [], "gemini", gemini_key, "testuser"):
             print("Chunk:", chunk)
     except Exception as e:
         import traceback
