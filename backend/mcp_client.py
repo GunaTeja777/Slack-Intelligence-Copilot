@@ -25,7 +25,7 @@ class MCPClientManager:
 
     def add_log(self, level: str, message: str, tool_call: Optional[Dict[str, Any]] = None):
         log_entry = {
-            "timestamp": asyncio.get_event_loop().time() if asyncio.get_event_loop().is_running() else 0,
+            "timestamp": __import__('time').time(),
             "level": level,
             "message": message,
             "tool_call": tool_call
@@ -77,7 +77,7 @@ class MCPClientManager:
         )
 
         try:
-            self.exit_stack = contextlib_asynccontextmanager = stdio_client(server_params)
+            self.exit_stack = stdio_client(server_params)
             self.read_stream, self.write_stream = await self.exit_stack.__aenter__()
             self.session = ClientSession(self.read_stream, self.write_stream)
             await self.session.__aenter__()

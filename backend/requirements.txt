@@ -8,4 +8,4 @@ slack_sdk
 openai
 google-genai
 numpy
-mcp
+mcp>=1.0.0,<2.0.0

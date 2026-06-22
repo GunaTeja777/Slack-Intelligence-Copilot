@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 import asyncio
@@ -140,8 +141,9 @@ class CopilotAgent:
                 ))
             
             # Generate content using Client
-            response = client.models.generate_content(
-                model="gemini-3.5-flash",
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model="gemini-2.5-flash",
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
@@ -152,7 +154,8 @@ class CopilotAgent:
             
         elif provider == "openai":
             client = OpenAI(api_key=api_key)
-            response = client.chat.completions.create(
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.2
@@ -170,7 +173,7 @@ class CopilotAgent:
                 "options": {"temperature": 0.2}
             }
             try:
-                res = requests.post(url, json=payload, timeout=30)
+                res = await asyncio.to_thread(requests.post, url, json=payload, timeout=30)
                 if res.status_code == 200:
                     return res.json().get("message", {}).get("content", "")
                 else:
@@ -303,4 +306,3 @@ class CopilotAgent:
 
 # Singleton instance
 agent_runner = CopilotAgent()
-import re

@@ -45,7 +45,10 @@ async def lifespan(app: FastAPI):
         
     logger.info(f"Connecting to MCP server: {cmd} with args {args}")
     # Try connecting in background
-    asyncio.create_task(mcp_manager.connect(command=cmd, args=args))
+    try:
+        await asyncio.wait_for(mcp_manager.connect(command=cmd, args=args), timeout=15.0)
+    except asyncio.TimeoutError:
+        logger.warning("MCP server did not connect within 15s — will retry on demand.")
     yield
     logger.info("Shutting down FastAPI application...")
     await mcp_manager.disconnect()

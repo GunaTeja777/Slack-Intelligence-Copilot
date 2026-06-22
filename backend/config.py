@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     
     # Slack Configuration
     SLACK_BOT_TOKEN: Optional[str] = os.environ.get("SLACK_BOT_TOKEN")
-    DEFAULT_CHANNEL_ID: str = "C0BC5R8LQ92"
-    SLACK_TEAM_ID: str = "T0BBYQ88AA1"
+    DEFAULT_CHANNEL_ID: str = os.environ.get("SLACK_DEFAULT_CHANNEL_ID", "")
+    SLACK_TEAM_ID: str = os.environ.get("SLACK_TEAM_ID", "")
     
     # LLM Settings (User can override via UI, which gets saved here or in DB)
     LLM_PROVIDER: str = "gemini"  # gemini, openai, or local (ollama)
