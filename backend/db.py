@@ -176,7 +176,7 @@ class SafeConnection:
 def get_db_connection() -> SafeConnection:
     if settings.DATABASE_URL:
         _init_postgres()
-        db_url = settings.DATABASE_URL.strip("'\"")
+        db_url = settings.DATABASE_URL.strip("'\"\r\n \t")
         if db_url.startswith("postgres://"):
             db_url = db_url.replace("postgres://", "postgresql://", 1)
         raw_conn = psycopg2.connect(db_url)
