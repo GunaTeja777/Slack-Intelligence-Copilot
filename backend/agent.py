@@ -120,68 +120,97 @@ class CopilotAgent:
         api_key: str, 
         messages: List[Dict[str, str]]
     ) -> str:
-        """Call the configured LLM API (Gemini, OpenAI, or Ollama)."""
-        if provider == "gemini":
-            client = genai.Client(api_key=api_key)
-            
-            # Extract system instruction if present
-            system_instruction = None
-            start_idx = 0
-            if messages and messages[0]["role"] == "system":
-                system_instruction = messages[0]["content"]
-                start_idx = 1
-                
-            # Build contents
-            contents = []
-            for msg in messages[start_idx:]:
-                role = "user" if msg["role"] == "user" else "model"
-                contents.append(types.Content(
-                    role=role,
-                    parts=[types.Part.from_text(text=msg["content"])]
-                ))
-            
-            # Generate content using Client
-            response = await asyncio.to_thread(
-                client.models.generate_content,
-                model="gemini-2.5-flash",
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.2
-                )
-            )
-            return response.text
-            
-        elif provider == "openai":
-            client = OpenAI(api_key=api_key)
-            response = await asyncio.to_thread(
-                client.chat.completions.create,
-                model="gpt-4o-mini",
-                messages=messages,
-                temperature=0.2
-            )
-            return response.choices[0].message.content
-            
-        elif provider == "local":
-            # Call Ollama API
-            import requests
-            url = f"{settings.OLLAMA_API_URL}/api/chat"
-            payload = {
-                "model": settings.OLLAMA_MODEL,
-                "messages": messages,
-                "stream": False,
-                "options": {"temperature": 0.2}
-            }
+        """Call the configured LLM API (Gemini, OpenAI, or Ollama) with retry on 429 errors."""
+        retries = 3
+        delay = 2
+        for attempt in range(retries):
             try:
-                res = await asyncio.to_thread(requests.post, url, json=payload, timeout=30)
-                if res.status_code == 200:
-                    return res.json().get("message", {}).get("content", "")
+                if provider == "gemini":
+                    client = genai.Client(api_key=api_key)
+                    
+                    # Extract system instruction if present
+                    system_instruction = None
+                    start_idx = 0
+                    if messages and messages[0]["role"] == "system":
+                        system_instruction = messages[0]["content"]
+                        start_idx = 1
+                        
+                    # Build contents
+                    contents = []
+                    for msg in messages[start_idx:]:
+                        role = "user" if msg["role"] == "user" else "model"
+                        contents.append(types.Content(
+                            role=role,
+                            parts=[types.Part.from_text(text=msg["content"])]
+                        ))
+                    
+                    # Generate content using Client
+                    response = await asyncio.to_thread(
+                        client.models.generate_content,
+                        model="gemini-2.0-flash",
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.2
+                        )
+                    )
+                    return response.text
+                    
+                elif provider == "openai":
+                    client = OpenAI(api_key=api_key)
+                    response = await asyncio.to_thread(
+                        client.chat.completions.create,
+                        model="gpt-4o-mini",
+                        messages=messages,
+                        temperature=0.2
+                    )
+                    return response.choices[0].message.content
+                    
+                elif provider == "local":
+                    # Call Ollama API
+                    import requests
+                    url = f"{settings.OLLAMA_API_URL}/api/chat"
+                    payload = {
+                        "model": settings.OLLAMA_MODEL,
+                        "messages": messages,
+                        "stream": False,
+                        "options": {"temperature": 0.2}
+                    }
+                    try:
+                        res = await asyncio.to_thread(requests.post, url, json=payload, timeout=30)
+                        if res.status_code == 200:
+                            return res.json().get("message", {}).get("content", "")
+                        else:
+                            return f"Error from Ollama ({res.status_code}): {res.text}"
+                    except Exception as e:
+                        return f"Error connecting to Ollama: {e}"
                 else:
-                    return f"Error from Ollama ({res.status_code}): {res.text}"
+                    raise ValueError(f"Unknown LLM provider: {provider}")
+                    
             except Exception as e:
-                return f"Error connecting to Ollama: {e}"
-        else:
-            raise ValueError(f"Unknown LLM provider: {provider}")
+                is_rate_limit = any(term in str(e).lower() for term in ["429", "quota", "limit", "exhausted", "resource_exhausted"])
+                # Detect daily quota limit (which won't recover with brief sleeping)
+                is_daily_limit = any(term in str(e).lower() for term in ["perday", "daily"]) or ("limit: 0" in str(e).lower() and "requests" in str(e).lower())
+                
+                if is_rate_limit:
+                    if is_daily_limit:
+                        logger.error(f"Daily quota limit hit during _call_llm. Failing fast: {e}")
+                        raise RuntimeError(
+                            "Your Gemini API Key daily free tier quota has been fully exhausted. "
+                            "Please wait for it to reset tomorrow, configure another Gemini key, or switch your LLM Provider to OpenAI in the settings."
+                        ) from e
+                        
+                    if attempt < retries - 1:
+                        wait_time = delay
+                        match = re.search(r"(?:retry in|retrydelay|after)\s*\'?\"?([\d\.]+)", str(e), re.IGNORECASE)
+                        if match:
+                            wait_time = float(match.group(1)) + 1
+                        logger.warning(f"Rate limit hit during _call_llm. Waiting {wait_time}s before retrying (Attempt {attempt+1}/{retries})... Error: {e}")
+                        await asyncio.sleep(wait_time)
+                        delay *= 2
+                        continue
+                # If we exhausted retries or it's not a rate limit error, raise it
+                raise e
 
     async def run_query(
         self, 

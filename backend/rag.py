@@ -2,10 +2,13 @@ import os
 import sqlite3
 import json
 import logging
+import re
+import time
 import numpy as np  
 from typing import Dict, Any, List, Optional, Tuple
 # pyrefly: ignore [missing-import]
 from google import genai
+from google.genai import types
 from openai import OpenAI
 from config import settings
 
@@ -238,8 +241,85 @@ class LocalKnowledgeLayer:
             logger.error(f"Error generating embedding via {provider}: {e}")
         return None
 
+    def get_embeddings_batch(self, texts: List[str], provider: str, api_key: str) -> List[Optional[List[float]]]:
+        """Compute message embeddings in batch via selected provider (Gemini or OpenAI) with 429 rate limit retries."""
+        if not texts:
+            return []
+            
+        retries = 3
+        delay = 2
+        for attempt in range(retries):
+            try:
+                if provider == "gemini":
+                    client = genai.Client(api_key=api_key)
+                    
+                    # Format texts as a list of types.Content objects
+                    contents = [
+                        types.Content(parts=[types.Part.from_text(text=t if t.strip() else "[empty]")])
+                        for t in texts
+                    ]
+                    
+                    result = client.models.embed_content(
+                        model="gemini-embedding-2",
+                        contents=contents
+                    )
+                    
+                    embeddings_list = []
+                    if result.embeddings:
+                        for emb in result.embeddings:
+                            embeddings_list.append(emb.values)
+                    # Ensure the length matches the input texts
+                    if len(embeddings_list) == len(texts):
+                        return embeddings_list
+                    else:
+                        logger.warning("Batch embedding length mismatch, falling back to sequential.")
+                        return [self.get_embedding(t, provider, api_key) for t in texts]
+                        
+                elif provider == "openai":
+                    client = OpenAI(api_key=api_key)
+                    # Handle empty strings by replacing them with space or placeholder
+                    cleaned_texts = [t if t.strip() else " " for t in texts]
+                    response = client.embeddings.create(
+                        input=cleaned_texts,
+                        model="text-embedding-3-small"
+                    )
+                    embeddings_list = [item.embedding for item in response.data]
+                    if len(embeddings_list) == len(texts):
+                        return embeddings_list
+                    else:
+                        logger.warning("Batch embedding length mismatch for OpenAI, falling back to sequential.")
+                        return [self.get_embedding(t, provider, api_key) for t in texts]
+            except Exception as e:
+                is_rate_limit = any(term in str(e).lower() for term in ["429", "quota", "limit", "exhausted", "resource_exhausted"])
+                # Detect daily quota limit (which won't recover with brief sleeping)
+                is_daily_limit = any(term in str(e).lower() for term in ["perday", "daily"]) or ("limit: 0" in str(e).lower() and "requests" in str(e).lower())
+                
+                if is_rate_limit:
+                    if is_daily_limit:
+                        logger.error(f"Daily quota limit hit in get_embeddings_batch. Failing fast: {e}")
+                        # Return empty lists immediately so indexing doesn't hang
+                        return [None] * len(texts)
+                        
+                    if attempt < retries - 1:
+                        wait_time = delay
+                        # Try to extract delay from error message (e.g., "retry in 30.05s" or similar)
+                        match = re.search(r"(?:retry in|retrydelay|after)\s*\'?\"?([\d\.]+)", str(e), re.IGNORECASE)
+                        if match:
+                            wait_time = float(match.group(1)) + 1
+                        logger.warning(f"Rate limit hit during get_embeddings_batch. Waiting {wait_time}s before retrying (Attempt {attempt+1}/{retries})... Error: {e}")
+                        time.sleep(wait_time)
+                        delay *= 2
+                        continue
+                
+                # If we exhausted retries, log error and fallback to sequential
+                logger.error(f"Error generating batch embeddings via {provider} after retries: {e}")
+                try:
+                    return [self.get_embedding(t, provider, api_key) for t in texts]
+                except Exception:
+                    return [None] * len(texts)
+
     def index_messages(self, provider: str, api_key: str) -> int:
-        """Find unindexed messages and compute their embeddings."""
+        """Find unindexed messages and compute their embeddings in batches."""
         if not api_key:
             logger.warning("No API key provided, skipping indexing.")
             return 0
@@ -256,22 +336,46 @@ class LocalKnowledgeLayer:
             if not unindexed:
                 return 0
                 
-            indexed_count = 0
-            for row in unindexed:
-                ts, channel_id, text = row["ts"], row["channel_id"], row["text"]
-                emb = self.get_embedding(text, provider, api_key)
-                if emb:
-                    # Serialize embedding list to float32 bytes
-                    emb_blob = np.array(emb, dtype=np.float32).tobytes()
+            # Filter out empty/whitespace texts to avoid API issues and save queries
+            valid_rows = []
+            for r in unindexed:
+                text = r["text"]
+                if text and text.strip():
+                    valid_rows.append(r)
+                else:
+                    # Mark empty/whitespace messages as indexed with a zero vector
+                    dim = 3072 if provider == "gemini" else 1536
+                    dummy_emb = np.zeros(dim, dtype=np.float32).tobytes()
                     cursor.execute("""
                         INSERT OR REPLACE INTO message_embeddings (ts, channel_id, embedding)
                         VALUES (?, ?, ?)
-                    """, (ts, channel_id, emb_blob))
-                    indexed_count += 1
-                    
+                    """, (r["ts"], r["channel_id"], dummy_emb))
+            
+            if not valid_rows:
+                conn.commit()
+                return 0
+                
+            indexed_count = 0
+            batch_size = 100
+            
+            for i in range(0, len(valid_rows), batch_size):
+                batch = valid_rows[i:i+batch_size]
+                batch_texts = [r["text"] for r in batch]
+                
+                embeddings = self.get_embeddings_batch(batch_texts, provider, api_key)
+                
+                for row, emb in zip(batch, embeddings):
+                    if emb:
+                        emb_blob = np.array(emb, dtype=np.float32).tobytes()
+                        cursor.execute("""
+                            INSERT OR REPLACE INTO message_embeddings (ts, channel_id, embedding)
+                            VALUES (?, ?, ?)
+                        """, (row["ts"], row["channel_id"], emb_blob))
+                        indexed_count += 1
+                        
             conn.commit()
             if indexed_count > 0:
-                self.log_audit("INDEX_EMBEDDINGS", f"Computed embeddings for {indexed_count} messages.")
+                self.log_audit("INDEX_EMBEDDINGS", f"Computed embeddings for {indexed_count} messages in batches.")
             return indexed_count
 
     def search_semantic(
