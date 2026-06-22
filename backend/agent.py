@@ -258,13 +258,13 @@ class CopilotAgent:
 
                 # If there's a tool call
                 if call_json:
-                    tool_name = call_json.get("tool")
+                    tool_name = call_json.get("tool") or call_json.get("name")
                     arguments = call_json.get("arguments", {})
                     
                     yield {"type": "tool_start", "tool": tool_name, "arguments": arguments}
                     
                     # Intercept WRITE actions to ask for confirmation
-                    if tool_name in ["slack_post_message", "slack_reply_to_thread"] or "post" in tool_name or "send" in tool_name:
+                    if tool_name and (tool_name in ["slack_post_message", "slack_reply_to_thread"] or "post" in tool_name or "send" in tool_name):
                         # Suspend execution, ask for user confirmation
                         yield {
                             "type": "confirmation_required",
@@ -277,6 +277,10 @@ class CopilotAgent:
                             }
                         }
                         return # Terminate agent run until confirmed
+
+                    if not tool_name:
+                        yield {"type": "error", "message": "Model generated a tool call with no tool/name specified."}
+                        break
 
                     # Execute read-only tools immediately
                     tool_result = await mcp_manager.call_tool(tool_name, arguments)
