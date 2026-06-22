@@ -73,18 +73,25 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : true;
+    if (saved !== null) {
+      return saved === 'dark';
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    const nextMode = !isDarkMode;
+    setIsDarkMode(nextMode);
+    localStorage.setItem('theme', nextMode ? 'dark' : 'light');
+  };
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000/api/v1';
 
@@ -490,7 +497,7 @@ export default function App() {
           <div className="flex items-center gap-2 text-xs font-ui">
             {/* Light/Dark mode switcher */}
             <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
+              onClick={toggleDarkMode}
               className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white p-2 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all cursor-pointer"
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >

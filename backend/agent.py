@@ -171,7 +171,7 @@ class CopilotAgent:
                     # Generate content using Client
                     response = await asyncio.to_thread(
                         client.models.generate_content,
-                        model="gemini-2.5-flash",
+                        model=settings.GEMINI_MODEL,
                         contents=contents,
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,

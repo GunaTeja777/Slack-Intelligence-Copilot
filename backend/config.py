@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     
     # LLM Settings (User can override via UI, which gets saved here or in DB)
     LLM_PROVIDER: str = "gemini"  # gemini, openai, or local (ollama)
+    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
     GEMINI_API_KEY: Optional[str] = os.environ.get("GEMINI_API_KEY")
     OPENAI_API_KEY: Optional[str] = os.environ.get("OPENAI_API_KEY")
     OLLAMA_API_URL: str = "http://localhost:11434"

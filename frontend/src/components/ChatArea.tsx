@@ -32,8 +32,132 @@ interface ChatAreaProps {
   onCancelAction: () => void;
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({ 
-  messages, 
+const parseInlineContent = (text: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  const linkRegex = /(\[[^\]]+\]\([^)]+\))/g;
+  const linkTokens = text.split(linkRegex);
+
+  linkTokens.forEach((token, tIdx) => {
+    const match = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (match) {
+      const [_, linkText, destination] = match;
+      if (destination.startsWith('C')) {
+        parts.push(
+          <span 
+            key={`link-${tIdx}`} 
+            className="inline-flex items-center bg-violet-100 hover:bg-violet-200/80 dark:bg-violet-900/35 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded font-mono font-semibold text-xs border border-violet-250 dark:border-violet-800/40 gap-0.5 select-all transition-colors"
+            title={`Channel ID: ${destination}`}
+          >
+            #{linkText.replace(/^#/, '')}
+          </span>
+        );
+      } else if (destination.startsWith('U')) {
+        parts.push(
+          <span 
+            key={`link-${tIdx}`} 
+            className="inline-flex items-center bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded font-semibold text-xs border border-zinc-300 dark:border-zinc-700/60 gap-0.5 select-all transition-colors"
+            title={`User ID: ${destination}`}
+          >
+            @{linkText}
+          </span>
+        );
+      } else {
+        parts.push(
+          <a 
+            key={`link-${tIdx}`} 
+            href={destination} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-violet-600 hover:text-violet-705 dark:text-violet-400 dark:hover:text-violet-300 underline font-medium transition-colors"
+          >
+            {linkText}
+          </a>
+        );
+      }
+    } else {
+      const codeRegex = /(`[^`]+`)/g;
+      const codeTokens = token.split(codeRegex);
+      
+      codeTokens.forEach((subToken, cIdx) => {
+        if (subToken.startsWith('`') && subToken.endsWith('`')) {
+          const codeVal = subToken.slice(1, -1);
+          parts.push(
+            <code 
+              key={`code-${tIdx}-${cIdx}`} 
+              className="px-1.5 py-0.5 rounded bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono text-[11px] border border-zinc-300 dark:border-zinc-700/60"
+            >
+              {codeVal}
+            </code>
+          );
+        } else {
+          parts.push(subToken);
+        }
+      });
+    }
+  });
+
+  return parts;
+};
+
+const renderFormattedMessage = (content: string) => {
+  const lines = content.split('\n');
+  return lines.map((line, idx) => {
+    if (line.startsWith('### ')) {
+      const title = line.substring(4).trim();
+      return (
+        <h3 key={idx} className="text-xs font-bold text-violet-600 dark:text-violet-400 mt-4 mb-2 uppercase tracking-wider font-display flex items-center gap-2">
+          <span className="w-1 h-3 rounded bg-violet-600 dark:bg-violet-400"></span>
+          {title}
+        </h3>
+      );
+    }
+    if (line.startsWith('## ')) {
+      const title = line.substring(3).trim();
+      return (
+        <h2 key={idx} className="text-sm font-bold text-zinc-900 dark:text-white mt-5 mb-2.5 font-display">
+          {title}
+        </h2>
+      );
+    }
+    if (line.startsWith('# ')) {
+      const title = line.substring(2).trim();
+      return (
+        <h1 key={idx} className="text-base font-extrabold text-zinc-900 dark:text-white mt-6 mb-3 font-display">
+          {title}
+        </h1>
+      );
+    }
+
+    if (line.trim() === '---') {
+      return <hr key={idx} className="my-4 border-zinc-250 dark:border-zinc-800" />;
+    }
+
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      const text = line.substring(2);
+      return (
+        <div key={idx} className="flex items-start gap-2 my-1 pl-1">
+          <span className="text-violet-500 dark:text-violet-400 mt-1.5 shrink-0 select-none text-[8px]">•</span>
+          <span className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-350 font-ui font-medium">
+            {parseInlineContent(text)}
+          </span>
+        </div>
+      );
+    }
+
+    if (line.trim() === '') {
+      return <div key={idx} className="h-2" />;
+    }
+
+    return (
+      <p key={idx} className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-300 font-ui font-medium mb-1">
+        {parseInlineContent(line)}
+      </p>
+    );
+  });
+};
+
+export const ChatArea: React.FC<ChatAreaProps> = ({
+  messages,
   loading, 
   onSendMessage, 
   onConfirmAction, 
@@ -156,8 +280,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     }`}>
                       
                       {/* Message Content */}
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap font-ui font-medium">
-                        {msg.content}
+                      <div className="text-sm leading-relaxed font-ui font-medium">
+                        {isUser ? (
+                          <div className="whitespace-pre-wrap">{msg.content}</div>
+                        ) : (
+                          renderFormattedMessage(msg.content)
+                        )}
                       </div>
 
                       {/* Display Thoughts (Collapsible/Status) */}

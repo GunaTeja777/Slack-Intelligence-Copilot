@@ -29,6 +29,27 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up FastAPI application...")
+    
+    # Load stored credentials from database if present
+    saved_slack_token = rag_layer.get_setting("slack_token")
+    if saved_slack_token:
+        logger.info("Loaded saved Slack Bot Token from DB")
+        os.environ["SLACK_BOT_TOKEN"] = saved_slack_token
+        settings.SLACK_BOT_TOKEN = saved_slack_token
+        
+    saved_provider = rag_layer.get_setting("provider")
+    if saved_provider:
+        logger.info(f"Loaded saved LLM provider: {saved_provider}")
+        settings.LLM_PROVIDER = saved_provider
+        
+    saved_api_key = rag_layer.get_setting("api_key")
+    if saved_api_key:
+        logger.info("Loaded saved API key from DB")
+        if settings.LLM_PROVIDER == "gemini":
+            settings.GEMINI_API_KEY = saved_api_key
+        elif settings.LLM_PROVIDER == "openai":
+            settings.OPENAI_API_KEY = saved_api_key
+
     # Read command and args from settings
     cmd = settings.MCP_SERVER_COMMAND
     server_args = settings.MCP_SERVER_ARGS
@@ -98,6 +119,11 @@ class SettingsUpdateRequest(BaseModel):
     server_command: Optional[str] = None
     server_args: Optional[str] = None
 
+class TestSettingsRequest(BaseModel):
+    provider: str
+    api_key: Optional[str] = None
+    slack_token: Optional[str] = None
+
 # Background Task for Syncing
 async def run_sync_task():
     rag_layer.log_audit("SYNC_START", "Initiating background sync from Slack API...")
@@ -151,9 +177,18 @@ async def run_sync_task():
         rag_layer.log_audit("SYNC_ERROR", f"Error during sync: {e}")
 
 # API Endpoints
+def mask_token(token: Optional[str]) -> str:
+    if not token:
+        return ""
+    if len(token) <= 8:
+        return "••••••••"
+    return f"{token[:6]}••••{token[-4:]}"
+
 @app.get("/api/v1/status")
 async def get_status():
     """Return connection status, logs, and list of discovered tools."""
+    api_val = rag_layer.get_setting("api_key") or settings.GEMINI_API_KEY or settings.OPENAI_API_KEY
+    slack_val = rag_layer.get_setting("slack_token") or os.environ.get("SLACK_BOT_TOKEN") or settings.SLACK_BOT_TOKEN
     return {
         "connected": mcp_manager.connected,
         "tools": mcp_manager.tools,
@@ -162,8 +197,10 @@ async def get_status():
             "server_command": mcp_manager.server_command,
             "server_args": mcp_manager.server_args,
             "provider": rag_layer.get_setting("provider", settings.LLM_PROVIDER),
-            "has_api_key": bool(rag_layer.get_setting("api_key") or settings.GEMINI_API_KEY or settings.OPENAI_API_KEY),
-            "slack_token_configured": bool(os.environ.get("SLACK_BOT_TOKEN") or settings.SLACK_BOT_TOKEN)
+            "has_api_key": bool(api_val),
+            "slack_token_configured": bool(slack_val),
+            "masked_api_key": mask_token(api_val),
+            "masked_slack_token": mask_token(slack_val)
         }
     }
 
@@ -305,23 +342,184 @@ async def get_audit_logs():
 @app.post("/api/v1/settings")
 async def update_settings(req: SettingsUpdateRequest):
     """Save API keys, provider choice, and custom MCP details."""
+    reconnect_needed = False
+    
     rag_layer.set_setting("provider", req.provider)
+    settings.LLM_PROVIDER = req.provider
+    
     if req.api_key:
         rag_layer.set_setting("api_key", req.api_key)
+        if req.provider == "gemini":
+            settings.GEMINI_API_KEY = req.api_key
+        elif req.provider == "openai":
+            settings.OPENAI_API_KEY = req.api_key
         
     if req.slack_token:
-        os.environ["SLACK_BOT_TOKEN"] = req.slack_token
-        # Update configuration in config
-        settings.SLACK_BOT_TOKEN = req.slack_token
+        current_slack_token = rag_layer.get_setting("slack_token") or os.environ.get("SLACK_BOT_TOKEN") or settings.SLACK_BOT_TOKEN
+        if req.slack_token != current_slack_token:
+            rag_layer.set_setting("slack_token", req.slack_token)
+            os.environ["SLACK_BOT_TOKEN"] = req.slack_token
+            settings.SLACK_BOT_TOKEN = req.slack_token
+            reconnect_needed = True
         
-    if req.server_command:
+    if req.server_command and req.server_command != settings.MCP_SERVER_COMMAND:
         settings.MCP_SERVER_COMMAND = req.server_command
+        reconnect_needed = True
         
-    if req.server_args:
+    if req.server_args and req.server_args != settings.MCP_SERVER_ARGS:
         settings.MCP_SERVER_ARGS = req.server_args
+        reconnect_needed = True
 
     rag_layer.log_audit("SETTINGS_UPDATED", f"Provider updated to '{req.provider}'")
+    
+    if reconnect_needed:
+        logger.info("Settings update requires MCP server reconnect. Reconnecting...")
+        cmd = settings.MCP_SERVER_COMMAND
+        server_args = settings.MCP_SERVER_ARGS
+        
+        if isinstance(server_args, str):
+            if os.path.exists(server_args):
+                args = [server_args]
+            else:
+                import shlex
+                args = shlex.split(server_args, posix=False) if os.name == 'nt' else shlex.split(server_args)
+                args = [a.strip('"\'') for a in args]
+        else:
+            args = server_args
+            
+        env = {"SLACK_BOT_TOKEN": os.environ.get("SLACK_BOT_TOKEN", "")}
+        success = await mcp_manager.connect(command=cmd, args=args, env_override=env)
+        if not success:
+            logger.error("Failed to reconnect to MCP server after settings update.")
+            rag_layer.log_audit("MCP_RECONNECT_FAILED", "Failed to reconnect to MCP server with updated configuration.")
+        else:
+            rag_layer.log_audit("MCP_RECONNECTED", "Successfully reconnected to MCP server with updated configuration.")
+
     return {"status": "success", "message": "Settings updated successfully."}
+
+@app.post("/api/v1/settings/test")
+async def test_settings(req: TestSettingsRequest):
+    """Test LLM and Slack API keys/tokens before saving them."""
+    provider = req.provider
+    api_key = req.api_key
+    slack_token = req.slack_token
+
+    # Fallbacks for LLM keys if not provided in payload but already exist
+    if not api_key:
+        api_key = rag_layer.get_setting("api_key")
+        if not api_key:
+            if provider == "gemini":
+                api_key = settings.GEMINI_API_KEY
+            elif provider == "openai":
+                api_key = settings.OPENAI_API_KEY
+
+    # Fallback for Slack token if not provided in payload but already exists
+    if not slack_token:
+        slack_token = rag_layer.get_setting("slack_token") or os.environ.get("SLACK_BOT_TOKEN") or settings.SLACK_BOT_TOKEN
+
+    test_results = {
+        "llm": {"status": "skipped", "message": "No key to test or local provider selected."},
+        "slack": {"status": "skipped", "message": "No token to test."}
+    }
+
+    # 1. Test LLM Connection
+    if provider == "local":
+        import requests
+        try:
+            res = await asyncio.to_thread(requests.get, f"{settings.OLLAMA_API_URL}/api/tags", timeout=5)
+            if res.status_code == 200:
+                test_results["llm"] = {
+                    "status": "success",
+                    "message": f"Successfully connected to Ollama at {settings.OLLAMA_API_URL}."
+                }
+            else:
+                test_results["llm"] = {
+                    "status": "error",
+                    "message": f"Ollama returned status code {res.status_code}."
+                }
+        except Exception as e:
+            test_results["llm"] = {
+                "status": "error",
+                "message": f"Could not connect to Ollama: {str(e)}"
+            }
+    elif api_key:
+        if provider == "gemini":
+            try:
+                from google import genai
+                client = genai.Client(api_key=api_key)
+                response = await asyncio.to_thread(
+                    client.models.generate_content,
+                    model=settings.GEMINI_MODEL,
+                    contents="Say 'API active'"
+                )
+                if response.text:
+                    test_results["llm"] = {
+                        "status": "success",
+                        "message": "Gemini API key is valid!"
+                    }
+                else:
+                    test_results["llm"] = {
+                        "status": "error",
+                        "message": "Gemini API returned an empty response."
+                    }
+            except Exception as e:
+                test_results["llm"] = {
+                    "status": "error",
+                    "message": f"Gemini verification failed: {str(e)}"
+                }
+        elif provider == "openai":
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+                response = await asyncio.to_thread(
+                    client.chat.completions.create,
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": "Say active"}],
+                    max_tokens=5
+                )
+                if response.choices[0].message.content:
+                    test_results["llm"] = {
+                        "status": "success",
+                        "message": "OpenAI API key is valid!"
+                    }
+                else:
+                    test_results["llm"] = {
+                        "status": "error",
+                        "message": "OpenAI API returned an empty response."
+                    }
+            except Exception as e:
+                test_results["llm"] = {
+                    "status": "error",
+                    "message": f"OpenAI verification failed: {str(e)}"
+                }
+    else:
+        test_results["llm"] = {
+            "status": "error",
+            "message": f"API key is missing for provider '{provider}'."
+        }
+
+    # 2. Test Slack Connection
+    if slack_token:
+        try:
+            from slack_sdk import WebClient
+            client = WebClient(token=slack_token)
+            auth_test = await asyncio.to_thread(client.auth_test)
+            test_results["slack"] = {
+                "status": "success",
+                "message": f"Slack token is valid! Authorized as bot user '{auth_test.get('user')}' in team '{auth_test.get('team')}'."
+            }
+        except Exception as e:
+            test_results["slack"] = {
+                "status": "error",
+                "message": f"Slack token verification failed: {str(e)}"
+            }
+    else:
+        test_results["slack"] = {
+            "status": "error",
+            "message": "Slack token is missing."
+        }
+
+    return test_results
 
 if __name__ == "__main__":
     import uvicorn
