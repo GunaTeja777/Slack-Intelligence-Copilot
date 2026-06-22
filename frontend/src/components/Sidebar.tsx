@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-1.5">
           <button 
             onClick={onOpenSettings}
-            className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-all duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-805 p-2 rounded-lg border border-zinc-300 dark:border-zinc-800/80 hover:border-violet-500/40 hover-glow-purple"
+            className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-all duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 p-2 rounded-lg border border-zinc-300 dark:border-zinc-800/80 hover:border-violet-500/40 hover-glow-purple"
             title="Open settings"
           >
             <Key className="w-4 h-4" />
@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="lg:hidden text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800/85 transition-all"
               title="Close sidebar"
             >
-              <X className="w-4.5 h-4.5" />
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
         </div>
         {connected ? (
-          <span className="bg-violet-500/10 text-violet-600 dark:text-violet-305 border border-violet-500/20 text-[9px] px-2.5 py-0.5 rounded-full font-bold font-mono">
+          <span className="bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-500/20 text-[9px] px-2.5 py-0.5 rounded-full font-bold font-mono">
             {toolsCount} Tools Active
           </span>
         ) : (
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </label>
             <button
               type="submit"
-              className="text-[10px] font-bold text-zinc-600 dark:text-zinc-305 hover:text-zinc-900 dark:hover:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 px-2.5 py-0.5 rounded-md hover:border-violet-500/30 transition-all"
+              className="text-[10px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 px-2.5 py-0.5 rounded-md hover:border-violet-500/30 transition-all"
             >
               Search
             </button>

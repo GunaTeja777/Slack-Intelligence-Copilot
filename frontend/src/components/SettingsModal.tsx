@@ -62,7 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
       <div className="w-full max-w-2xl bg-white dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[560px] backdrop-blur-2xl animate-in zoom-in-95 duration-200 transition-colors">
         
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4.5 border-b border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950/60">
+        <div className="flex justify-between items-center px-6 py-5 border-b border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950/60">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-violet-500/10 rounded-lg text-violet-500 dark:text-violet-400">
               <Settings className="w-5 h-5 animate-spin-slow" />
@@ -73,7 +73,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
             onClick={onClose} 
             className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white transition-all duration-200 p-1.5 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-300 dark:hover:border-zinc-800"
           >
-            <X className="w-4.5 h-4.5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -290,14 +290,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, c
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4.5 py-2 text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 border border-zinc-300 rounded-xl"
+                  className="px-5 py-2 text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 border border-zinc-300 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 text-xs text-white dark:text-zinc-950 bg-violet-605 hover:bg-violet-600 dark:bg-violet-400 dark:hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-md disabled:opacity-50 cursor-pointer hover:scale-[1.02]"
+                  className="px-5 py-2 text-xs text-white dark:text-zinc-950 bg-violet-600 hover:bg-violet-600 dark:bg-violet-400 dark:hover:bg-violet-500 active:scale-95 transition-all font-bold rounded-xl shadow-md disabled:opacity-50 cursor-pointer hover:scale-[1.02]"
                 >
                   {saving ? 'Saving...' : 'Save Settings'}
                 </button>

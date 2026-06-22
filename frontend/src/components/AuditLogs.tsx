@@ -52,14 +52,14 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs }) => {
                 <div className="flex justify-between items-center font-ui">
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border font-mono ${
                     isConfirmed 
-                      ? 'bg-amber-500/10 text-amber-605 dark:text-amber-400 border-amber-500/25 dark:border-amber-500/20' 
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25 dark:border-amber-500/20' 
                       : isExecuted 
                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 dark:border-emerald-500/20' 
                       : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
                   }`}>
                     {log.action}
                   </span>
-                  <span className="text-[10px] text-zinc-405 dark:text-zinc-500 flex items-center gap-1.5 font-medium">
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 font-medium">
                     <Clock className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
                     {log.timestamp}
                   </span>
@@ -80,7 +80,7 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ logs }) => {
           Active SQLite Engine
         </span>
         <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-505" /> Validated Vault
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" /> Validated Vault
         </span>
       </div>
     </div>

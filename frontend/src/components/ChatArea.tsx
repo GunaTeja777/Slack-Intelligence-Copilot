@@ -144,7 +144,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       ? 'bg-zinc-200 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold' 
                       : 'bg-gradient-to-tr from-violet-600/10 to-fuchsia-600/10 border-violet-500/20 text-violet-600 dark:text-violet-400 font-bold'
                   }`}>
-                    {isUser ? 'U' : <Sparkles className="w-4.5 h-4.5" />}
+                    {isUser ? 'U' : <Sparkles className="w-5 h-5" />}
                   </div>
 
                   {/* Bubble */}
@@ -162,7 +162,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
                       {/* Display Thoughts (Collapsible/Status) */}
                       {!isUser && msg.thoughts && msg.thoughts.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-zinc-300 dark:border-zinc-950 space-y-2 bg-zinc-200/40 dark:bg-[#0a0c10] p-3.5 rounded-xl border border-zinc-300 dark:border-zinc-900/60 shadow-inner">
+                        <div className="mt-4 pt-3 border-t border-zinc-300 dark:border-zinc-900 space-y-2 bg-zinc-200/40 dark:bg-[#0a0c10] p-3.5 rounded-xl border border-zinc-300 dark:border-zinc-900/60 shadow-inner">
                           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2 font-display">
                             <span className="w-1.5 h-1.5 rounded-full bg-violet-500 dark:bg-violet-400 animate-pulse"></span>
                             Reasoning thoughts ({msg.thoughts.length})
@@ -220,8 +220,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                       </div>
                                       {step.result && (
                                         <div>
-                                          <span className="text-zinc-500 dark:text-zinc-550 font-bold block mb-1 uppercase tracking-wider text-[9px]">Result Payload:</span>
-                                          <pre className="bg-white dark:bg-[#0b0c10] p-3 rounded-lg text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-905 overflow-x-auto max-h-[160px] overflow-y-auto">{JSON.stringify(step.result, null, 2)}</pre>
+                                          <span className="text-zinc-500 dark:text-zinc-500 font-bold block mb-1 uppercase tracking-wider text-[9px]">Result Payload:</span>
+                                          <pre className="bg-white dark:bg-[#0b0c10] p-3 rounded-lg text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-900 overflow-x-auto max-h-[160px] overflow-y-auto">{JSON.stringify(step.result, null, 2)}</pre>
                                         </div>
                                       )}
                                     </div>
@@ -285,7 +285,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 msgIdx
                               )}
                               disabled={confirmingIdx === msgIdx}
-                              className="px-4.5 py-2 text-[11px] text-white dark:text-zinc-950 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 disabled:opacity-50 transition-all rounded-xl font-bold flex items-center gap-1.5 shadow-lg shadow-amber-500/10 font-ui hover:scale-[1.02] duration-200 cursor-pointer"
+                              className="px-5 py-2 text-[11px] text-white dark:text-zinc-950 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 disabled:opacity-50 transition-all rounded-xl font-bold flex items-center gap-1.5 shadow-lg shadow-amber-500/10 font-ui hover:scale-[1.02] duration-200 cursor-pointer"
                             >
                               {confirmingIdx === msgIdx ? (
                                 <>
@@ -310,7 +310,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <div className="flex items-center gap-2 pl-2">
                         <button
                           onClick={() => handleCopy(msg.content, msgIdx)}
-                          className="text-zinc-450 hover:text-zinc-700 dark:text-zinc-550 dark:hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-1 text-[10px] font-ui"
+                          className="text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-1 text-[10px] font-ui"
                         >
                           {copiedIndex === msgIdx ? (
                             <>
@@ -337,9 +337,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         {loading && (
           <div className="flex gap-4 justify-start animate-pulse">
             <div className="w-8 h-8 rounded-lg bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-violet-500 dark:text-violet-400">
-              <Sparkles className="w-4.5 h-4.5 animate-spin" />
+              <Sparkles className="w-5 h-5 animate-spin" />
             </div>
-            <div className="bg-zinc-100 dark:bg-zinc-900/60 p-4.5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 max-w-[80%]">
+            <div className="bg-zinc-100 dark:bg-zinc-900/60 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 max-w-[80%]">
               <div className="flex gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-violet-500/50 animate-bounce"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-violet-500/50 animate-bounce delay-100"></span>

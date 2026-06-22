@@ -221,7 +221,7 @@ class LocalKnowledgeLayer:
             if provider == "gemini":
                 client = genai.Client(api_key=api_key)
                 result = client.models.embed_content(
-                    model="text-embedding-004",
+                    model="gemini-embedding-2",
                     contents=text
                 )
                 if result.embeddings:

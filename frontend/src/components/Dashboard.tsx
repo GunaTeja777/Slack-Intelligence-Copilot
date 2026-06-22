@@ -28,7 +28,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
     return (
       <div className="flex flex-col items-center justify-center h-full text-zinc-500 py-24 gap-3 animate-pulse font-ui">
         <BarChart3 className="w-10 h-10 text-violet-500 animate-spin" />
-        <p className="text-xs font-bold text-zinc-650 dark:text-zinc-400">Assembling workspace analytics...</p>
+        <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Assembling workspace analytics...</p>
       </div>
     );
   }
@@ -62,7 +62,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
   const maxCount = Math.max(...stats.message_volume_trend.map(d => d.count), 1);
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950/40 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900/60 rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">
+    <div className="flex flex-col h-full bg-white dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900/60 rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
