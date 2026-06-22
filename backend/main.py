@@ -11,7 +11,7 @@ if backend_dir not in sys.path:
 
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
@@ -19,6 +19,16 @@ from mcp_client import mcp_manager
 from rag import rag_layer
 from dashboard import dashboard_manager
 from agent import agent_runner
+from auth import (
+    init_auth_db,
+    create_user,
+    check_user_exists,
+    create_session,
+    delete_session,
+    verify_password,
+    get_current_user,
+    get_db_connection
+)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -29,6 +39,9 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up FastAPI application...")
+    
+    # Initialize Auth DB tables
+    init_auth_db()
     
     # Load stored credentials from database if present
     saved_slack_token = rag_layer.get_setting("slack_token")
@@ -76,7 +89,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
-# Enable CORS for React frontend (Vite defaults to port 5173 or similar)
+# Enable CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -123,6 +136,14 @@ class TestSettingsRequest(BaseModel):
     provider: str
     api_key: Optional[str] = None
     slack_token: Optional[str] = None
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 # Background Task for Syncing
 async def run_sync_task():
@@ -176,7 +197,7 @@ async def run_sync_task():
         logger.error(f"Error in sync task: {e}")
         rag_layer.log_audit("SYNC_ERROR", f"Error during sync: {e}")
 
-# API Endpoints
+# API Endpoints Helper
 def mask_token(token: Optional[str]) -> str:
     if not token:
         return ""
@@ -184,8 +205,59 @@ def mask_token(token: Optional[str]) -> str:
         return "••••••••"
     return f"{token[:6]}••••{token[-4:]}"
 
+# --- Authentication Routes ---
+
+@app.post("/api/v1/auth/signup")
+async def signup(req: SignupRequest):
+    username = req.username.strip().lower()
+    if len(username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    if check_user_exists(username):
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    success = create_user(username, req.password)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to create user")
+        
+    token = create_session(username)
+    return {"token": token, "username": username}
+
+@app.post("/api/v1/auth/login")
+async def login(req: LoginRequest):
+    username = req.username.strip().lower()
+    
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        row = cursor.execute(
+            "SELECT password_hash, salt FROM app_users WHERE username = ?",
+            (username,)
+        ).fetchone()
+        
+    if not row or not verify_password(req.password, row["password_hash"], row["salt"]):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+        
+    token = create_session(username)
+    return {"token": token, "username": username}
+
+@app.post("/api/v1/auth/logout")
+async def logout(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        delete_session(token)
+    return {"status": "success", "message": "Logged out successfully"}
+
+@app.get("/api/v1/auth/me")
+async def get_me(current_user: str = Depends(get_current_user)):
+    return {"username": current_user}
+
+# --- Secure Core API Routes ---
+
 @app.get("/api/v1/status")
-async def get_status():
+async def get_status(current_user: str = Depends(get_current_user)):
     """Return connection status, logs, and list of discovered tools."""
     api_val = rag_layer.get_setting("api_key") or settings.GEMINI_API_KEY or settings.OPENAI_API_KEY
     slack_val = rag_layer.get_setting("slack_token") or os.environ.get("SLACK_BOT_TOKEN") or settings.SLACK_BOT_TOKEN
@@ -205,7 +277,7 @@ async def get_status():
     }
 
 @app.post("/api/v1/connect")
-async def connect_mcp(req: ConnectRequest):
+async def connect_mcp(req: ConnectRequest, current_user: str = Depends(get_current_user)):
     """Manually connect or reconnect to an MCP server."""
     env = {}
     if req.slack_token:
@@ -220,7 +292,7 @@ async def connect_mcp(req: ConnectRequest):
     return {"status": "connected", "tools": mcp_manager.tools}
 
 @app.post("/api/v1/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, current_user: str = Depends(get_current_user)):
     """Interact with the Agent, streaming thoughts, tool calls, and final answers."""
     # Resolve provider and API key
     provider = req.provider or rag_layer.get_setting("provider") or settings.LLM_PROVIDER
@@ -254,7 +326,7 @@ async def chat(req: ChatRequest):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/api/v1/confirm")
-async def confirm_action(req: ConfirmRequest):
+async def confirm_action(req: ConfirmRequest, current_user: str = Depends(get_current_user)):
     """Execute a pending write action after user confirmation."""
     tool_name = req.tool
     arguments = req.arguments
@@ -271,7 +343,7 @@ async def confirm_action(req: ConfirmRequest):
     return res
 
 @app.post("/api/v1/sync")
-async def trigger_sync(background_tasks: BackgroundTasks):
+async def trigger_sync(background_tasks: BackgroundTasks, current_user: str = Depends(get_current_user)):
     """Trigger background sync of Slack workspace."""
     if not mcp_manager.connected:
         raise HTTPException(status_code=400, detail="Cannot sync: not connected to Slack MCP server.")
@@ -280,7 +352,7 @@ async def trigger_sync(background_tasks: BackgroundTasks):
     return {"status": "sync_started", "message": "Slack workspace sync started in the background."}
 
 @app.post("/api/v1/search")
-async def search_workspace(req: SearchRequest):
+async def search_workspace(req: SearchRequest, current_user: str = Depends(get_current_user)):
     """Search cached messages using keyword or semantic vector search."""
     # Resolve provider and API key for semantic search
     provider = rag_layer.get_setting("provider", settings.LLM_PROVIDER)
@@ -311,28 +383,28 @@ async def search_workspace(req: SearchRequest):
     return {"query": req.query, "semantic": req.semantic, "results": results}
 
 @app.get("/api/v1/dashboard")
-async def get_dashboard():
+async def get_dashboard(current_user: str = Depends(get_current_user)):
     """Return dashboard analytics charts and metrics."""
     stats = dashboard_manager.get_stats()
     return stats
 
 @app.get("/api/v1/channels")
-async def get_channels():
+async def get_channels(current_user: str = Depends(get_current_user)):
     """Return cached channels."""
     return {"channels": rag_layer.get_cached_channels()}
 
 @app.get("/api/v1/users")
-async def get_users():
+async def get_users(current_user: str = Depends(get_current_user)):
     """Return cached users."""
     return {"users": rag_layer.get_cached_users()}
 
 @app.get("/api/v1/messages")
-async def get_messages(channel_id: Optional[str] = None, limit: Optional[int] = 100):
+async def get_messages(channel_id: Optional[str] = None, limit: Optional[int] = 100, current_user: str = Depends(get_current_user)):
     """Return cached messages."""
     return {"messages": rag_layer.get_cached_messages(channel_id, limit)}
 
 @app.get("/api/v1/audit-logs")
-async def get_audit_logs():
+async def get_audit_logs(current_user: str = Depends(get_current_user)):
     """Return secure write actions audit trail."""
     with rag_layer._get_connection() as conn:
         cursor = conn.cursor()
@@ -340,7 +412,7 @@ async def get_audit_logs():
         return {"logs": [dict(r) for r in rows]}
 
 @app.post("/api/v1/settings")
-async def update_settings(req: SettingsUpdateRequest):
+async def update_settings(req: SettingsUpdateRequest, current_user: str = Depends(get_current_user)):
     """Save API keys, provider choice, and custom MCP details."""
     reconnect_needed = False
     
@@ -398,7 +470,7 @@ async def update_settings(req: SettingsUpdateRequest):
     return {"status": "success", "message": "Settings updated successfully."}
 
 @app.post("/api/v1/settings/test")
-async def test_settings(req: TestSettingsRequest):
+async def test_settings(req: TestSettingsRequest, current_user: str = Depends(get_current_user)):
     """Test LLM and Slack API keys/tokens before saving them."""
     provider = req.provider
     api_key = req.api_key

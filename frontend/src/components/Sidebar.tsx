@@ -31,6 +31,8 @@ interface SidebarProps {
   onOpenAuditLogs: () => void;
   onSearch: (query: string, semantic: boolean) => void;
   onClose?: () => void; // Optional handler to close mobile drawer
+  username?: string;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -45,7 +47,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   onOpenAuditLogs,
   onSearch,
-  onClose
+  onClose,
+  username,
+  onLogout
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [useSemantic, setUseSemantic] = useState(false);
@@ -254,6 +258,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
           <span className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-[9px] px-2 py-0.5 rounded-md font-mono text-zinc-500 dark:text-zinc-500 font-bold">Vault</span>
         </button>
+
+        {onLogout && (
+          <div className="flex items-center justify-between px-2 pt-2 border-t border-zinc-250 dark:border-zinc-900/60">
+            <span className="text-[10px] text-zinc-550 dark:text-zinc-500 truncate font-mono">
+              User: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{username || 'admin'}</span>
+            </span>
+            <button
+              onClick={onLogout}
+              className="text-[10px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-450 dark:hover:text-rose-350 hover:underline cursor-pointer"
+            >
+              Log out
+            </button>
+          </div>
+        )}
       </div>
 
     </div>

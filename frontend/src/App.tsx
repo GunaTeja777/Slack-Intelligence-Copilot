@@ -4,6 +4,7 @@ import { ChatArea } from './components/ChatArea';
 import { Dashboard } from './components/Dashboard';
 import { AuditLogs } from './components/AuditLogs';
 import { SettingsModal } from './components/SettingsModal';
+import { AuthScreen } from './components/AuthScreen';
 import { Terminal, Shield, BarChart3, Database, Search, Menu, Sun, Moon, X } from 'lucide-react';
 
 interface ToolExecutionStep {
@@ -30,6 +31,11 @@ interface Message {
 }
 
 export default function App() {
+  // Authentication states
+  const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
+  const [username, setUsername] = useState<string | null>(localStorage.getItem('auth_username'));
+  const [authChecking, setAuthChecking] = useState(true);
+
   // App connection and list states
   const [connected, setConnected] = useState(false);
   const [tools, setTools] = useState<any[]>([]);
@@ -95,8 +101,36 @@ export default function App() {
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000/api/v1';
 
-  // Initial load
+  // Session verification and handlers
   useEffect(() => {
+    const verifyToken = async () => {
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken) {
+        try {
+          const res = await fetch(`${API_BASE}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${storedToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setToken(storedToken);
+            setUsername(data.username);
+          } else {
+            handleLogoutLocal();
+          }
+        } catch (err) {
+          console.error('Error verifying token on start:', err);
+        }
+      }
+      setAuthChecking(false);
+    };
+
+    verifyToken();
+  }, []);
+
+  // Fetch application data only when authenticated
+  useEffect(() => {
+    if (authChecking || !token) return;
+
     fetchSystemStatus();
     fetchCacheData();
     fetchDashboardStats();
@@ -109,11 +143,47 @@ export default function App() {
     }, 5000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [token, authChecking]);
+
+  const handleAuthSuccess = (newToken: string, newUsername: string) => {
+    localStorage.setItem('auth_token', newToken);
+    localStorage.setItem('auth_username', newUsername);
+    setToken(newToken);
+    setUsername(newUsername);
+  };
+
+  const handleLogoutLocal = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_username');
+    setToken(null);
+    setUsername(null);
+  };
+
+  const handleLogout = async () => {
+    const storedToken = localStorage.getItem('auth_token') || token;
+    if (storedToken) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${storedToken}` }
+        });
+      } catch (err) {
+        console.error('Error reporting logout to server:', err);
+      }
+    }
+    handleLogoutLocal();
+  };
 
   const fetchSystemStatus = async (silent = false) => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/status`);
+      const res = await fetch(`${API_BASE}/status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setConnected(data.connected);
@@ -127,11 +197,16 @@ export default function App() {
   };
 
   const fetchCacheData = async () => {
+    if (!token) return;
     try {
       const [chRes, uRes] = await Promise.all([
-        fetch(`${API_BASE}/channels`),
-        fetch(`${API_BASE}/users`)
+        fetch(`${API_BASE}/channels`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE}/users`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
+      if (chRes.status === 401 || uRes.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (chRes.ok) {
         const data = await chRes.json();
         setChannels(data.channels || []);
@@ -146,9 +221,16 @@ export default function App() {
   };
 
   const fetchDashboardStats = async () => {
+    if (!token) return;
     setDashboardLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/dashboard`);
+      const res = await fetch(`${API_BASE}/dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setDashboardStats(data);
@@ -161,8 +243,15 @@ export default function App() {
   };
 
   const fetchAuditLogs = async () => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/audit-logs`);
+      const res = await fetch(`${API_BASE}/audit-logs`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setAuditLogs(data.logs || []);
@@ -173,12 +262,18 @@ export default function App() {
   };
 
   const handleSync = async () => {
+    if (!token) return;
     setSyncing(true);
     try {
-      const res = await fetch(`${API_BASE}/sync`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/sync`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (res.ok) {
-        // Poll status until sync finishes or wait a brief period.
-        // Let's delay 5 seconds and fetch cache data.
         setTimeout(async () => {
           await fetchCacheData();
           await fetchDashboardStats();
@@ -194,6 +289,7 @@ export default function App() {
   };
 
   const handleSearch = async (query: string, semantic: boolean) => {
+    if (!token) return;
     setSearchActive(true);
     setLastSearchQuery(query);
     setSearchSemantic(semantic);
@@ -205,10 +301,16 @@ export default function App() {
       
       const res = await fetch(`${API_BASE}/search`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(body)
       });
-      
+      if (res.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setSearchResults(data.results || []);
@@ -219,6 +321,7 @@ export default function App() {
   };
 
   const handleSendMessage = async (text: string) => {
+    if (!token) return;
     // Append user message
     const userMsg: Message = { role: 'user', content: text };
     const updatedMessages = [...messages, userMsg];
@@ -242,13 +345,21 @@ export default function App() {
       // Initiate SSE request
       const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           query: text,
           history: historyPayload,
           provider: config.provider
         })
       });
+
+      if (response.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -338,13 +449,20 @@ export default function App() {
   };
 
   const handleConfirmAction = async (tool: string, args: any) => {
+    if (!token) return;
     try {
       const res = await fetch(`${API_BASE}/confirm`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ tool, arguments: args })
       });
-      
+      if (res.status === 401) {
+        handleLogoutLocal();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         
@@ -397,12 +515,19 @@ export default function App() {
   };
 
   const handleSaveSettings = async (settingsPayload: any) => {
+    if (!token) return;
     const res = await fetch(`${API_BASE}/settings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(settingsPayload)
     });
-    
+    if (res.status === 401) {
+      handleLogoutLocal();
+      return;
+    }
     if (res.ok) {
       await fetchSystemStatus();
     } else {
@@ -425,6 +550,21 @@ export default function App() {
     }
   };
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-zinc-950 text-slate-100 font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-10 h-10 border-4 border-violet-650/30 border-t-violet-600 rounded-full animate-spin" />
+          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider font-ui animate-pulse">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} apiBase={API_BASE} />;
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
@@ -442,6 +582,8 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
           onOpenAuditLogs={() => setRightPanelTab('audit')}
           onSearch={handleSearch}
+          username={username || undefined}
+          onLogout={handleLogout}
         />
       </div>
 
@@ -462,6 +604,8 @@ export default function App() {
             onOpenAuditLogs={() => { setRightPanelTab('audit'); setSidebarOpen(false); }}
             onSearch={(q, s) => { handleSearch(q, s); setSidebarOpen(false); }}
             onClose={() => setSidebarOpen(false)}
+            username={username || undefined}
+            onLogout={handleLogout}
           />
         </div>
       </div>
@@ -474,7 +618,7 @@ export default function App() {
             {/* Sidebar toggle for mobile */}
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white p-2 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all cursor-pointer"
+              className="lg:hidden text-zinc-550 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white p-2 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all cursor-pointer"
               title="Open sidebar"
             >
               <Menu className="w-5 h-5" />
@@ -505,7 +649,7 @@ export default function App() {
             </button>
 
             <span className="hidden sm:inline text-zinc-500 font-semibold">LLM:</span>
-            <span className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 px-3 py-1 rounded-xl text-zinc-600 dark:text-zinc-350 font-mono capitalize shadow-inner text-[10px] font-bold tracking-wider">
+            <span className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 px-3 py-1 rounded-xl text-zinc-655 dark:text-zinc-350 font-mono capitalize shadow-inner text-[10px] font-bold tracking-wider">
               {config.provider === 'local' ? 'Ollama' : config.provider}
             </span>
 
@@ -523,7 +667,7 @@ export default function App() {
         {/* Dynamic View: Search Results or Chat Area */}
         {searchActive ? (
           <div className="flex-1 bg-white dark:bg-zinc-950/45 border border-zinc-200 dark:border-zinc-900 rounded-2xl p-4 sm:p-6 flex flex-col h-full animate-in fade-in duration-200 shadow-xl dark:shadow-2xl backdrop-blur-xl transition-colors duration-300">
-            <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-900 mb-4 shrink-0 font-ui">
+            <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-905 mb-4 shrink-0 font-ui">
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-pulse" />
                 <h3 className="text-xs font-bold text-zinc-800 dark:text-white uppercase tracking-wider font-display">
@@ -532,7 +676,7 @@ export default function App() {
               </div>
               <button 
                 onClick={() => setSearchActive(false)}
-                className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-white transition-all p-1.5 bg-zinc-100 dark:bg-zinc-900/60 hover:bg-zinc-200 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-bold cursor-pointer"
+                className="text-zinc-550 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-white transition-all p-1.5 bg-zinc-100 dark:bg-zinc-900/60 hover:bg-zinc-200 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-bold cursor-pointer"
               >
                 Close Search
               </button>
@@ -541,7 +685,7 @@ export default function App() {
             <div className="flex-1 overflow-y-auto space-y-3.5 pr-1.5 scrollbar-thin">
               {searchResults.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-zinc-500 font-ui">
-                  <Database className="w-12 h-12 opacity-15 mb-4 text-zinc-400 dark:text-zinc-600" />
+                  <Database className="w-12 h-12 opacity-15 mb-4 text-zinc-400 dark:text-zinc-650" />
                   <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">No matches found in indexed knowledge layer.</p>
                   <p className="text-[10px] opacity-70 mt-1">Try running a sync cache operation or check keywords.</p>
                 </div>
@@ -552,7 +696,7 @@ export default function App() {
                     className="p-4 bg-zinc-50 dark:bg-zinc-950/80 rounded-xl border border-zinc-200 dark:border-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-800 hover:scale-[1.002] duration-200 transition-all flex flex-col gap-2.5 shadow-sm"
                   >
                     <div className="flex justify-between items-start text-[9px] font-ui">
-                      <span className="text-violet-600 dark:text-violet-300 bg-violet-500/10 border border-violet-500/15 px-2.5 py-0.5 rounded-md font-mono font-bold uppercase">
+                      <span className="text-violet-600 dark:text-violet-300 bg-violet-505/10 border border-violet-500/15 px-2.5 py-0.5 rounded-md font-mono font-bold uppercase">
                         #{res.channel_name}
                       </span>
                       <div className="flex items-center gap-2.5">
@@ -560,7 +704,7 @@ export default function App() {
                         <span className="text-zinc-500 dark:text-zinc-600 font-mono font-semibold">Match Score: {res.score.toFixed(3)}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-ui font-medium">{res.text}</p>
+                    <p className="text-xs text-zinc-705 dark:text-zinc-300 leading-relaxed font-ui font-medium">{res.text}</p>
                   </div>
                 ))
               )}
@@ -586,7 +730,7 @@ export default function App() {
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 cursor-pointer ${
               rightPanelTab === 'dashboard'
                 ? 'bg-white dark:bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-zinc-200 dark:border-violet-500/20 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:bg-zinc-200/30 dark:hover:bg-zinc-900/20'
+                : 'text-zinc-500 hover:text-zinc-805 dark:hover:text-zinc-300 hover:bg-zinc-200/30 dark:hover:bg-zinc-900/20'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -596,8 +740,8 @@ export default function App() {
             onClick={() => setRightPanelTab('tools')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 cursor-pointer ${
               rightPanelTab === 'tools'
-                ? 'bg-white dark:bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-zinc-200 dark:border-violet-500/20 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:bg-zinc-200/30 dark:hover:bg-zinc-900/20'
+                ? 'bg-white dark:bg-violet-550/10 text-violet-600 dark:text-violet-300 border border-zinc-200 dark:border-violet-500/20 shadow-sm'
+                : 'text-zinc-550 hover:text-zinc-800 dark:hover:text-zinc-300 hover:bg-zinc-200/30 dark:hover:bg-zinc-900/20'
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
@@ -628,12 +772,12 @@ export default function App() {
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Available MCP Tools</span>
                 <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono font-bold">Discovered: {tools.length}</span>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 max-h-[300px] border-b border-zinc-200 dark:border-zinc-900/60 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 max-h-[300px] border-b border-zinc-200 dark:border-zinc-909/60 scrollbar-thin">
                 {tools.length === 0 ? (
                   <div className="text-xs text-zinc-400 text-center py-10 font-ui italic">No tools registered. Verify server connection.</div>
                 ) : (
                   tools.map((t, idx) => (
-                    <div key={idx} className="p-3.5 bg-zinc-50 dark:bg-zinc-950/80 rounded-xl border border-zinc-200 dark:border-zinc-900/80 hover:border-zinc-300 dark:hover:border-zinc-800 transition-colors space-y-1">
+                    <div key={idx} className="p-3.5 bg-zinc-50 dark:bg-zinc-955/80 rounded-xl border border-zinc-200 dark:border-zinc-900/80 hover:border-zinc-300 dark:hover:border-zinc-800 transition-colors space-y-1">
                       <span className="text-xs font-bold font-mono text-zinc-700 dark:text-zinc-300">{t.name}</span>
                       <p className="text-[10px] text-zinc-500 leading-relaxed font-ui">{t.description}</p>
                     </div>
@@ -652,11 +796,11 @@ export default function App() {
               </div>
               <div className="flex-1 overflow-y-auto p-4 font-mono text-[9px] bg-zinc-900 dark:bg-black/60 text-emerald-500 dark:text-emerald-400 space-y-2 max-h-[320px] scrollbar-thin">
                 {mcpLogs.length === 0 ? (
-                  <div className="text-zinc-500 text-center py-16 font-mono text-[10px]">Listening for Stdio JSON-RPC frames...</div>
+                  <div className="text-zinc-550 text-center py-16 font-mono text-[10px]">Listening for Stdio JSON-RPC frames...</div>
                 ) : (
                   mcpLogs.map((log, idx) => (
                     <div key={idx} className="border-b border-zinc-200/40 dark:border-zinc-900/40 pb-1.5 font-mono">
-                      <span className="text-zinc-400 dark:text-zinc-550 font-mono">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>{' '}
+                      <span className="text-zinc-400 dark:text-zinc-500 font-mono">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>{' '}
                       <span className={log.level === 'ERROR' ? 'text-rose-600 dark:text-rose-400 font-bold' : log.level === 'WARNING' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-semibold'}>
                         {log.level}:
                       </span>{' '}
@@ -678,16 +822,16 @@ export default function App() {
       <div className={`fixed inset-0 z-40 xl:hidden transition-opacity duration-300 ${rightPanelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRightPanelOpen(false)} />
         <div className={`absolute inset-y-0 right-0 w-full sm:w-[460px] transform transition-transform duration-300 ease-in-out ${rightPanelOpen ? 'translate-x-0' : 'translate-x-full'} bg-white dark:bg-zinc-950 p-4 border-l border-zinc-200 dark:border-zinc-900 flex flex-col gap-4 shadow-2xl`}>
-          <div className="flex justify-between items-center font-ui border-b border-zinc-200 dark:border-zinc-900 pb-3">
-            <span className="text-xs font-bold text-zinc-550 uppercase tracking-widest font-display">Workspace Stats & Logs</span>
+          <div className="flex justify-between items-center font-ui border-b border-zinc-200 dark:border-zinc-909 pb-3">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest font-display">Workspace Stats & Logs</span>
             <button 
               onClick={() => setRightPanelOpen(false)}
-              className="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white p-1.5 hover:bg-zinc-150 dark:hover:bg-zinc-900 rounded-lg cursor-pointer"
+              className="text-zinc-500 hover:text-zinc-805 dark:text-zinc-400 dark:hover:text-white p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-                 <div className="flex bg-zinc-100 dark:bg-zinc-950/85 border border-zinc-200 dark:border-zinc-900 p-1 rounded-xl gap-1 shrink-0 font-ui">
+          <div className="flex bg-zinc-105 dark:bg-zinc-950/85 border border-zinc-200 dark:border-zinc-900 p-1 rounded-xl gap-1 shrink-0 font-ui">
             <button
               onClick={() => setRightPanelTab('dashboard')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 cursor-pointer ${
@@ -741,13 +885,13 @@ export default function App() {
                     tools.map((t, idx) => (
                       <div key={idx} className="p-3 bg-zinc-50 dark:bg-zinc-950/80 rounded-xl border border-zinc-200 dark:border-zinc-900/80 space-y-1">
                         <span className="text-xs font-bold font-mono text-zinc-700 dark:text-zinc-300">{t.name}</span>
-                        <p className="text-[10px] text-zinc-500 leading-relaxed font-ui">{t.description}</p>
+                        <p className="text-[10px] text-zinc-550 leading-relaxed font-ui">{t.description}</p>
                       </div>
                     ))
                   )}
                 </div>
                 
-                <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-950/60 border-b border-zinc-200 dark:border-zinc-900 flex justify-between items-center font-display">
+                <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-955/60 border-b border-zinc-200 dark:border-zinc-900 flex justify-between items-center font-display">
                   <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-violet-400">Stdio RPC Stream Console</span>
                   <button 
                     onClick={() => setMcpLogs([])} 
@@ -763,7 +907,7 @@ export default function App() {
                     mcpLogs.map((log, idx) => (
                       <div key={idx} className="border-b border-zinc-200/40 dark:border-zinc-900/40 pb-1.5 font-mono">
                         <span className="text-zinc-400 dark:text-zinc-555 font-mono">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>{' '}
-                        <span className={log.level === 'ERROR' ? 'text-rose-650 dark:text-rose-400 font-bold' : log.level === 'WARNING' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-semibold'}>
+                        <span className={log.level === 'ERROR' ? 'text-rose-650 dark:text-rose-405 font-bold' : log.level === 'WARNING' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-semibold'}>
                           {log.level}:
                         </span>{' '}
                         <span className="text-zinc-700 dark:text-zinc-300">{log.message}</span>
