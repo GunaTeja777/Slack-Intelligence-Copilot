@@ -16,6 +16,8 @@ interface DashboardStats {
   rag_doc_count: number;
   top_users: Array<{ user_name: string; message_count: number }>;
   message_volume_trend: Array<{ date: string; count: number }>;
+  ok?: boolean;
+  error?: string;
 }
 
 interface DashboardProps {
@@ -24,11 +26,15 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ stats, loading }) => {
-  if (loading || !stats) {
+  const hasValidStats = stats && stats.total_messages !== undefined && stats.message_volume_trend !== undefined && stats.top_users !== undefined;
+
+  if (loading || !hasValidStats) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-zinc-500 py-24 gap-3 animate-pulse font-ui">
         <BarChart3 className="w-10 h-10 text-violet-500 animate-spin" />
-        <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Assembling workspace analytics...</p>
+        <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
+          {stats && !stats.ok && stats.error ? `Error: ${stats.error}` : "Assembling workspace analytics..."}
+        </p>
       </div>
     );
   }
