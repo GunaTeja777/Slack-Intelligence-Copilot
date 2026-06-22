@@ -99,7 +99,15 @@ export default function App() {
     localStorage.setItem('theme', nextMode ? 'dark' : 'light');
   };
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000/api/v1';
+  const getApiBase = () => {
+    let base = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000/api/v1';
+    base = base.trim().replace(/\/+$/, '');
+    if (!base.endsWith('/api/v1')) {
+      base = `${base}/api/v1`;
+    }
+    return base;
+  };
+  const API_BASE = getApiBase();
 
   const resetWorkspaceState = () => {
     setConnected(false);

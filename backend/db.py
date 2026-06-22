@@ -34,8 +34,8 @@ class SafeCursor:
             query = query.replace('?', '%s')
             
             # 2. Translate SQLite-specific dialects to PostgreSQL
-            query = query.replace('AUTOINCREMENT', '')
             query = query.replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY')
+            query = query.replace('AUTOINCREMENT', '')
             query = query.replace('BLOB', 'BYTEA')
             query = query.replace('DATETIME', 'TIMESTAMP')
             

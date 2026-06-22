@@ -11,7 +11,7 @@ if backend_dir not in sys.path:
 
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
@@ -49,6 +49,15 @@ async def lifespan(app: FastAPI):
     await mcp_manager.disconnect_all()
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
+api_router = APIRouter()
+
+@app.get("/")
+async def root():
+    return {
+        "status": "healthy",
+        "message": "Slack Intelligence Copilot API is running",
+        "version": "1.0.0"
+    }
 
 # Enable CORS for React frontend
 app.add_middleware(
@@ -169,7 +178,7 @@ def mask_token(token: Optional[str]) -> str:
 
 # --- Authentication Routes ---
 
-@app.post("/api/v1/auth/signup")
+@api_router.post("/auth/signup")
 async def signup(req: SignupRequest):
     username = req.username.strip().lower()
     if len(username) < 3:
@@ -187,7 +196,7 @@ async def signup(req: SignupRequest):
     token = create_session(username)
     return {"token": token, "username": username}
 
-@app.post("/api/v1/auth/login")
+@api_router.post("/auth/login")
 async def login(req: LoginRequest):
     username = req.username.strip().lower()
     
@@ -204,7 +213,7 @@ async def login(req: LoginRequest):
     token = create_session(username)
     return {"token": token, "username": username}
 
-@app.post("/api/v1/auth/logout")
+@api_router.post("/auth/logout")
 async def logout(request: Request):
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
@@ -212,13 +221,13 @@ async def logout(request: Request):
         delete_session(token)
     return {"status": "success", "message": "Logged out successfully"}
 
-@app.get("/api/v1/auth/me")
+@api_router.get("/auth/me")
 async def get_me(current_user: str = Depends(get_current_user)):
     return {"username": current_user}
 
 # --- Secure Core API Routes ---
 
-@app.get("/api/v1/status")
+@api_router.get("/status")
 async def get_status(current_user: str = Depends(get_current_user)):
     """Return connection status, logs, and list of discovered tools for current user."""
     slack_token = rag_layer.get_user_setting(current_user, "slack_token")
@@ -256,7 +265,7 @@ async def get_status(current_user: str = Depends(get_current_user)):
         }
     }
 
-@app.post("/api/v1/connect")
+@api_router.post("/connect")
 async def connect_mcp(req: ConnectRequest, current_user: str = Depends(get_current_user)):
     """Manually connect or reconnect to an MCP server."""
     slack_token = req.slack_token or rag_layer.get_user_setting(current_user, "slack_token")
@@ -274,7 +283,7 @@ async def connect_mcp(req: ConnectRequest, current_user: str = Depends(get_curre
         
     return {"status": "connected", "tools": manager.tools}
 
-@app.post("/api/v1/chat")
+@api_router.post("/chat")
 async def chat(req: ChatRequest, current_user: str = Depends(get_current_user)):
     """Interact with the Agent, streaming thoughts, tool calls, and final answers."""
     provider = req.provider or rag_layer.get_user_setting(current_user, "provider") or settings.LLM_PROVIDER
@@ -304,7 +313,7 @@ async def chat(req: ChatRequest, current_user: str = Depends(get_current_user)):
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-@app.post("/api/v1/confirm")
+@api_router.post("/confirm")
 async def confirm_action(req: ConfirmRequest, current_user: str = Depends(get_current_user)):
     """Execute a pending write action after user confirmation."""
     tool_name = req.tool
@@ -318,7 +327,7 @@ async def confirm_action(req: ConfirmRequest, current_user: str = Depends(get_cu
     rag_layer.log_audit(current_user, "WRITE_EXECUTED", f"Write action result: {json.dumps(res)}")
     return res
 
-@app.post("/api/v1/sync")
+@api_router.post("/sync")
 async def trigger_sync(background_tasks: BackgroundTasks, current_user: str = Depends(get_current_user)):
     """Trigger background sync of Slack workspace."""
     manager = mcp_manager.get(current_user)
@@ -328,7 +337,7 @@ async def trigger_sync(background_tasks: BackgroundTasks, current_user: str = De
     background_tasks.add_task(run_sync_task, current_user)
     return {"status": "sync_started", "message": "Slack workspace sync started in the background."}
 
-@app.post("/api/v1/search")
+@api_router.post("/search")
 async def search_workspace(req: SearchRequest, current_user: str = Depends(get_current_user)):
     """Search cached messages using keyword or semantic vector search."""
     provider = rag_layer.get_user_setting(current_user, "provider") or settings.LLM_PROVIDER
@@ -365,28 +374,28 @@ async def search_workspace(req: SearchRequest, current_user: str = Depends(get_c
         
     return {"query": req.query, "semantic": req.semantic, "results": results}
 
-@app.get("/api/v1/dashboard")
+@api_router.get("/dashboard")
 async def get_dashboard(current_user: str = Depends(get_current_user)):
     """Return dashboard analytics charts and metrics."""
     stats = dashboard_manager.get_stats(current_user)
     return stats
 
-@app.get("/api/v1/channels")
+@api_router.get("/channels")
 async def get_channels(current_user: str = Depends(get_current_user)):
     """Return cached channels."""
     return {"channels": rag_layer.get_cached_channels(current_user)}
 
-@app.get("/api/v1/users")
+@api_router.get("/users")
 async def get_users(current_user: str = Depends(get_current_user)):
     """Return cached users."""
     return {"users": rag_layer.get_cached_users(current_user)}
 
-@app.get("/api/v1/messages")
+@api_router.get("/messages")
 async def get_messages(channel_id: Optional[str] = None, limit: Optional[int] = 100, current_user: str = Depends(get_current_user)):
     """Return cached messages."""
     return {"messages": rag_layer.get_cached_messages(current_user, channel_id, limit)}
 
-@app.get("/api/v1/audit-logs")
+@api_router.get("/audit-logs")
 async def get_audit_logs(current_user: str = Depends(get_current_user)):
     """Return secure write actions audit trail."""
     with rag_layer._get_connection() as conn:
@@ -394,7 +403,7 @@ async def get_audit_logs(current_user: str = Depends(get_current_user)):
         rows = cursor.execute("SELECT * FROM audit_logs WHERE username = ? ORDER BY id DESC LIMIT 100", (current_user,)).fetchall()
         return {"logs": [dict(r) for r in rows]}
 
-@app.post("/api/v1/settings")
+@api_router.post("/settings")
 async def update_settings(req: SettingsUpdateRequest, current_user: str = Depends(get_current_user)):
     """Save API keys, provider choice, and custom MCP details."""
     reconnect_needed = False
@@ -451,7 +460,7 @@ async def update_settings(req: SettingsUpdateRequest, current_user: str = Depend
 
     return {"status": "success", "message": "Settings updated successfully."}
 
-@app.post("/api/v1/settings/test")
+@api_router.post("/settings/test")
 async def test_settings(req: TestSettingsRequest, current_user: str = Depends(get_current_user)):
     """Test LLM and Slack API keys/tokens before saving them."""
     provider = req.provider
@@ -574,6 +583,9 @@ async def test_settings(req: TestSettingsRequest, current_user: str = Depends(ge
         }
 
     return test_results
+
+app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn
