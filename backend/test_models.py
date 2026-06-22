@@ -12,6 +12,6 @@ client = genai.Client(api_key=gemini_key)
 try:
     print("Listing available models...")
     for model in client.models.list():
-        print(f"Model: {model.name} (Supported actions: {model.supported_generation_methods})")
+        print(f"Model: {model.name}")
 except Exception as e:
     print(f"Error listing models: {e}")

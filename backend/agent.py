@@ -17,14 +17,21 @@ logger = logging.getLogger("agent")
 SYSTEM_PROMPT = """You are the "Slack Intelligence Copilot", a high-performance AI agent that connects to Slack via an MCP (Model Context Protocol) server.
 Your goal is to help the user manage, search, analyze, and post to Slack using natural language.
 
-You have access to the following tools via MCP:
+You have access to the following tools:
 {tools_description}
 
-You can also search local knowledge cache if needed, but your primary source of truth for live operations is the MCP tools.
+KNOWN WORKSPACE INFORMATION (Cached Channels and Users):
+Channels:
+{channels_list}
+
+Users:
+{users_list}
+
+Use the above cached workspace information to resolve channel names (e.g. #general -> C0BC5R8LQ92) and user names to IDs immediately. DO NOT call `slack_get_channels` or `slack_get_users` if the target is already present in this cached list.
 
 CRITICAL RULES:
-1. RECONSTRUCT CHANNEL IDS: If the user refers to a channel by name (e.g. "#general"), you must first search for the channel ID or retrieve the list of channels to find the ID. Slack APIs require channel IDs (e.g., 'C0BC5R8LQ92'), NOT names.
-2. RECONSTRUCT USER IDS: If the user refers to a user by name, you must search or list users to find their user ID (e.g., 'U0BBYQ88AA1').
+1. RESOLVE NAMES TO IDS: First look at the KNOWN WORKSPACE INFORMATION. If a channel or user name is not listed, only then use the discovery tools (`slack_get_channels` or `slack_get_users`). Always use IDs when calling other tools.
+2. PREFER LOCAL CACHE SEARCH: When searching for historical messages, topics, or past discussions, try using `search_local_cache` first. It queries a local RAG database of messages, which avoids calling Slack live API tools and saves quota.
 3. CONFIRMATION REQUIRED: For any write action (sending a message, replying to a thread), you must pause and output a write request so the user can approve it. Do not attempt to execute it directly without asking the user.
 4. CITATIONS: In your final answer, always cite the channels (e.g. [#general](C0BC5R8LQ92)) and users (e.g. [Teja](U0BBYQ88AA1)) you gathered info from.
 5. REPORT FORMATTING: For any analysis request (summaries, sentiment, updates, blocker detection), you must format your final response EXACTLY like this:
@@ -104,11 +111,28 @@ class CopilotAgent:
         self.max_steps = 10
 
     def _get_tools_description(self) -> str:
-        tools = mcp_manager.tools
-        if not tools:
-            return "No tools available. Connect to the MCP server."
-            
+        tools = list(mcp_manager.tools)
+        
+        # Define local search tool schema
+        local_search_tool = {
+            "name": "search_local_cache",
+            "description": "Search the local knowledge cache database of Slack messages. Use this first to search for past discussions, key decisions, or general message history to save API quota and avoid hitting Slack live API limits.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The search query term or keywords."},
+                    "channel_id": {"type": "string", "description": "Optional channel ID to filter search."},
+                    "semantic": {"type": "boolean", "description": "Set to true to use semantic/vector search, false for keyword search. Defaults to true."}
+                },
+                "required": ["query"]
+            }
+        }
+        
         desc = ""
+        # Format our local tool first
+        desc += f"- `{local_search_tool['name']}`: {local_search_tool['description']}\n"
+        desc += f"  Schema: {json.dumps(local_search_tool['inputSchema'])}\n\n"
+        
         for t in tools:
             desc += f"- `{t['name']}`: {t['description']}\n"
             desc += f"  Schema: {json.dumps(t['inputSchema'])}\n\n"
@@ -147,13 +171,16 @@ class CopilotAgent:
                     # Generate content using Client
                     response = await asyncio.to_thread(
                         client.models.generate_content,
-                        model="gemini-2.0-flash",
+                        model="gemini-2.5-flash",
                         contents=contents,
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,
                             temperature=0.2
                         )
                     )
+                    if response.text is None:
+                        logger.error(f"Gemini API returned None response. Response: {response}")
+                        raise ValueError("Gemini API returned an empty or blocked response.")
                     return response.text
                     
                 elif provider == "openai":
@@ -220,9 +247,32 @@ class CopilotAgent:
         api_key: str
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Run the ReAct agent loop, yielding steps as they occur."""
+        # Get cached channels and users to inject as context
+        try:
+            cached_channels = rag_layer.get_cached_channels()
+            channels_list = "\n".join([f"- #{ch['name']} (ID: {ch['id']})" for ch in cached_channels])
+            if not channels_list:
+                channels_list = "(No cached channels found in database. Use slack_get_channels tool if needed.)"
+        except Exception as e:
+            logger.error(f"Error loading cached channels: {e}")
+            channels_list = "(Error retrieving cached channels)"
+
+        try:
+            cached_users = rag_layer.get_cached_users()
+            users_list = "\n".join([f"- {u['real_name']} / {u['name']} (ID: {u['id']})" for u in cached_users])
+            if not users_list:
+                users_list = "(No cached users found in database. Use slack_get_users tool if needed.)"
+        except Exception as e:
+            logger.error(f"Error loading cached users: {e}")
+            users_list = "(Error retrieving cached users)"
+
         # 1. Build prompt
         tools_desc = self._get_tools_description()
-        system_content = SYSTEM_PROMPT.format(tools_description=tools_desc)
+        system_content = SYSTEM_PROMPT.format(
+            tools_description=tools_desc,
+            channels_list=channels_list,
+            users_list=users_list
+        )
         
         # Prepare workspace message history
         agent_messages = [{"role": "system", "content": system_content}]
@@ -315,7 +365,24 @@ class CopilotAgent:
                         break
 
                     # Execute read-only tools immediately
-                    tool_result = await mcp_manager.call_tool(tool_name, arguments)
+                    if tool_name == "search_local_cache":
+                        query_arg = arguments.get("query")
+                        channel_id_arg = arguments.get("channel_id")
+                        semantic_arg = arguments.get("semantic", True)
+                        
+                        try:
+                            if semantic_arg:
+                                # Run vector semantic search
+                                res = rag_layer.search_semantic(query_arg, provider, api_key, channel_id=channel_id_arg)
+                            else:
+                                # Run keyword standard text search
+                                res = rag_layer.search_keyword(query_arg, channel_id=channel_id_arg)
+                            tool_result = {"ok": True, "results": res}
+                        except Exception as e:
+                            logger.error(f"Local cache search failed: {e}", exc_info=True)
+                            tool_result = {"ok": False, "error": str(e)}
+                    else:
+                        tool_result = await mcp_manager.call_tool(tool_name, arguments)
                     
                     yield {"type": "tool_end", "tool": tool_name, "result": tool_result}
                     
@@ -327,7 +394,7 @@ class CopilotAgent:
                     })
                     
             except Exception as e:
-                logger.error(f"Agent error at step {step_count}: {e}")
+                logger.error(f"Agent error at step {step_count}: {e}", exc_info=True)
                 yield {"type": "error", "message": f"Agent error: {str(e)}"}
                 break
         else:

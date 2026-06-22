@@ -43,7 +43,7 @@ if gemini_key:
         from google import genai
         client = genai.Client(api_key=gemini_key)
         response = client.models.generate_content(
-            model="gemini-3.5-flash",
+            model="gemini-2.5-flash",
             contents="Say 'API is active!'",
         )
         print("SUCCESS: Gemini API Key is VALID!")
