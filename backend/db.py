@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import sqlite3
 import logging
 from typing import Any, Dict, List, Optional
@@ -32,6 +33,9 @@ class SafeCursor:
         if self.is_postgres:
             # 1. Translate placeholders ? to %s
             query = query.replace('?', '%s')
+            
+            # Escape literal '%' characters for psycopg2 (which uses printf-style formatting)
+            query = re.sub(r'%(?!s)', '%%', query)
             
             # 2. Translate SQLite-specific dialects to PostgreSQL
             query = query.replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY')
