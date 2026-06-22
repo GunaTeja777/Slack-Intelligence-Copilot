@@ -1,5 +1,4 @@
 import os
-import sqlite3
 import json
 import logging
 import re
@@ -11,6 +10,7 @@ from google import genai
 from google.genai import types
 from openai import OpenAI
 from config import settings
+from db import get_db_connection
 
 logger = logging.getLogger("rag")
 
@@ -19,10 +19,8 @@ class LocalKnowledgeLayer:
         self.db_path = db_path or settings.DB_PATH
         self._init_db()
 
-    def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+    def _get_connection(self):
+        return get_db_connection()
 
     def _init_db(self):
         """Initialize the SQLite database schema."""

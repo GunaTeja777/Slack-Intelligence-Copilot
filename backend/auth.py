@@ -2,18 +2,13 @@ import os
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-import sqlite3
 from typing import Optional
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from config import settings
+from db import get_db_connection
 
 security = HTTPBearer()
-
-def get_db_connection():
-    conn = sqlite3.connect(settings.DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 def init_auth_db():
     """Create the authentication tables if they do not exist."""
@@ -72,8 +67,10 @@ def create_user(username: str, password: str) -> bool:
             )
             conn.commit()
         return True
-    except sqlite3.IntegrityError:
-        return False
+    except Exception as e:
+        if "IntegrityError" in type(e).__name__:
+            return False
+        raise e
 
 def check_user_exists(username: str) -> bool:
     """Check if a username is already taken."""

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     
     # Database Settings
     DB_PATH: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slack_copilot.db")
+    DATABASE_URL: Optional[str] = os.environ.get("DATABASE_URL")
     
     # MCP Connection Settings
     MCP_SERVER_COMMAND: str = sys.executable
@@ -31,5 +32,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 settings = Settings()

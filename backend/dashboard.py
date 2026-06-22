@@ -1,10 +1,10 @@
-import sqlite3
 import json
 import logging
 from collections import Counter
 import re
 from typing import Dict, Any, List, Optional
 from config import settings
+from db import get_db_connection
 
 logger = logging.getLogger("dashboard")
 
@@ -12,10 +12,8 @@ class DashboardManager:
     def __init__(self, db_path: str = None):
         self.db_path = db_path or settings.DB_PATH
 
-    def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+    def _get_connection(self):
+        return get_db_connection()
 
     def get_stats(self) -> Dict[str, Any]:
         """Calculate and return dashboard statistics."""
@@ -25,10 +23,10 @@ class DashboardManager:
                 
                 # 1. Active Channels (Message counts)
                 channel_counts = cursor.execute("""
-                    SELECT c.id, c.name, COUNT(m.ts) as msg_count, c.num_members
+                    SELECT c.id, c.name, c.num_members, COUNT(m.ts) as msg_count
                     FROM channels c
                     LEFT JOIN messages m ON c.id = m.channel_id
-                    GROUP BY c.id
+                    GROUP BY c.id, c.name, c.num_members
                     ORDER BY msg_count DESC
                 """).fetchall()
                 
@@ -47,7 +45,7 @@ class DashboardManager:
                     SELECT u.id, u.real_name, u.display_name, u.avatar, COUNT(m.ts) as msg_count
                     FROM users u
                     JOIN messages m ON u.id = m.user_id
-                    GROUP BY u.id
+                    GROUP BY u.id, u.real_name, u.display_name, u.avatar
                     ORDER BY msg_count DESC
                     LIMIT 10
                 """).fetchall()
@@ -64,13 +62,23 @@ class DashboardManager:
                 
                 # 3. Message Volume over time (grouped by day)
                 # In Slack, 'ts' is a unix timestamp as string (e.g. '1718873099.123456')
-                volume_rows = cursor.execute("""
-                    SELECT date(datetime(CAST(ts AS REAL), 'unixepoch')) as day, COUNT(*) as count
-                    FROM messages
-                    GROUP BY day
-                    ORDER BY day ASC
-                    LIMIT 30
-                """).fetchall()
+                if settings.DATABASE_URL:
+                    volume_query = """
+                        SELECT DATE(TO_TIMESTAMP(CAST(ts AS DOUBLE PRECISION))) as day, COUNT(*) as count
+                        FROM messages
+                        GROUP BY day
+                        ORDER BY day ASC
+                        LIMIT 30
+                    """
+                else:
+                    volume_query = """
+                        SELECT date(datetime(CAST(ts AS REAL), 'unixepoch')) as day, COUNT(*) as count
+                        FROM messages
+                        GROUP BY day
+                        ORDER BY day ASC
+                        LIMIT 30
+                    """
+                volume_rows = cursor.execute(volume_query).fetchall()
                 
                 message_volume = [
                     {"date": row["day"], "count": row["count"]}
@@ -181,12 +189,12 @@ class DashboardManager:
                 sentiment_percentage = int((avg_sentiment + 1) * 50)
                 
                 # Calculate additional stats expected by the frontend
-                total_messages = cursor.execute("SELECT COUNT(*) FROM messages").fetchone()[0] or 0
-                active_users_count = cursor.execute("SELECT COUNT(DISTINCT user_id) FROM messages").fetchone()[0] or 0
+                total_messages = cursor.execute("SELECT COUNT(*) as cnt FROM messages").fetchone()["cnt"] or 0
+                active_users_count = cursor.execute("SELECT COUNT(DISTINCT user_id) as cnt FROM messages").fetchone()["cnt"] or 0
                 if active_users_count == 0:
-                    active_users_count = cursor.execute("SELECT COUNT(*) FROM users").fetchone()[0] or 0
-                channel_count = cursor.execute("SELECT COUNT(*) FROM channels").fetchone()[0] or 0
-                rag_doc_count = cursor.execute("SELECT COUNT(*) FROM message_embeddings").fetchone()[0] or 0
+                    active_users_count = cursor.execute("SELECT COUNT(*) as cnt FROM users").fetchone()["cnt"] or 0
+                channel_count = cursor.execute("SELECT COUNT(*) as cnt FROM channels").fetchone()["cnt"] or 0
+                rag_doc_count = cursor.execute("SELECT COUNT(*) as cnt FROM message_embeddings").fetchone()["cnt"] or 0
 
                 top_users = [
                     {
