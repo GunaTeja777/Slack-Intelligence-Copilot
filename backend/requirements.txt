@@ -9,3 +9,4 @@ openai
 google-genai
 numpy
 mcp>=1.0.0,<2.0.0
+psycopg2-binary
