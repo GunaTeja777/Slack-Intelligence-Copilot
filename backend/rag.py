@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import json
 import logging
 import re
@@ -27,50 +28,67 @@ class LocalKnowledgeLayer:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
+            # Check and drop legacy tables if they don't have multi-tenant 'username' column
+            for table in ['channels', 'users', 'messages', 'message_embeddings', 'audit_logs']:
+                try:
+                    cursor.execute(f"PRAGMA table_info({table})")
+                    cols = [r[1] for r in cursor.fetchall()]
+                    if cols and 'username' not in cols:
+                        logger.info(f"Dropping legacy table {table} to upgrade to multi-tenant schema...")
+                        cursor.execute(f"DROP TABLE IF EXISTS {table}")
+                except Exception as e:
+                    logger.warning(f"Error checking table {table} schema: {e}")
+            
             # Channels table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS channels (
-                    id TEXT PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    id TEXT NOT NULL,
                     name TEXT NOT NULL,
                     topic TEXT,
                     purpose TEXT,
-                    num_members INTEGER DEFAULT 0
+                    num_members INTEGER DEFAULT 0,
+                    PRIMARY KEY (username, id)
                 )
             """)
             
             # Users table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
-                    id TEXT PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    id TEXT NOT NULL,
                     name TEXT NOT NULL,
                     real_name TEXT,
                     display_name TEXT,
                     avatar TEXT,
-                    email TEXT
+                    email TEXT,
+                    PRIMARY KEY (username, id)
                 )
             """)
             
             # Messages table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS messages (
-                    ts TEXT PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    ts TEXT NOT NULL,
                     channel_id TEXT NOT NULL,
                     user_id TEXT,
                     text TEXT NOT NULL,
                     thread_ts TEXT,
                     reply_count INTEGER DEFAULT 0,
                     json_data TEXT,
-                    FOREIGN KEY (channel_id) REFERENCES channels(id)
+                    PRIMARY KEY (username, ts)
                 )
             """)
             
             # Embeddings table (stores 1D float32 array as BLOB)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS message_embeddings (
-                    ts TEXT PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    ts TEXT NOT NULL,
                     channel_id TEXT NOT NULL,
                     embedding BLOB NOT NULL,
-                    FOREIGN KEY (ts) REFERENCES messages(ts)
+                    PRIMARY KEY (username, ts)
                 )
             """)
             
@@ -78,6 +96,7 @@ class LocalKnowledgeLayer:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS audit_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                     action TEXT NOT NULL,
                     details TEXT NOT NULL
@@ -91,18 +110,38 @@ class LocalKnowledgeLayer:
                     value TEXT NOT NULL
                 )
             """)
+
+            # App Users table (for authentication credentials)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS app_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # User Settings table (for persistent user-specific settings)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    username TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    PRIMARY KEY (username, key)
+                )
+            """)
             
             conn.commit()
             logger.info("Database initialized successfully.")
 
-    def log_audit(self, action: str, details: str):
+    def log_audit(self, username: Optional[str], action: str, details: str):
         """Write an entry to the secure audit logs."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT INTO audit_logs (action, details) VALUES (?, ?)",
-                    (action, details)
+                    "INSERT INTO audit_logs (username, action, details) VALUES (?, ?, ?)",
+                    (username, action, details)
                 )
                 conn.commit()
         except Exception as e:
@@ -130,15 +169,70 @@ class LocalKnowledgeLayer:
         except Exception as e:
             logger.error(f"Failed to set setting {key}: {e}")
 
+    # User Settings accessors
+    def get_user_setting(self, username: str, key: str, default: Optional[str] = None) -> Optional[str]:
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                res = cursor.execute(
+                    "SELECT value FROM user_settings WHERE username = ? AND key = ?",
+                    (username, key)
+                )
+                row = res.fetchone()
+                return row["value"] if row else default
+        except Exception:
+            return default
+
+    def set_user_setting(self, username: str, key: str, value: str):
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT OR REPLACE INTO user_settings (username, key, value) VALUES (?, ?, ?)",
+                    (username, key, value)
+                )
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to set setting {key} for user {username}: {e}")
+
+    def create_app_user(self, username: str, password_hash: str) -> bool:
+        """Create a new app user account."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO app_users (username, password_hash) VALUES (?, ?)",
+                    (username, password_hash)
+                )
+                conn.commit()
+                return True
+        except sqlite3.IntegrityError:
+            return False
+        except Exception as e:
+            logger.error(f"Failed to create app user: {e}")
+            return False
+
+    def get_app_user(self, username: str) -> Optional[Dict[str, Any]]:
+        """Retrieve an app user's details."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                row = cursor.execute("SELECT * FROM app_users WHERE username = ?", (username,)).fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Failed to get app user: {e}")
+            return None
+
     # Data Sync and Storage API
-    def save_channels(self, channels: List[Dict[str, Any]]):
+    def save_channels(self, username: str, channels: List[Dict[str, Any]]):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             for ch in channels:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO channels (id, name, topic, purpose, num_members)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO channels (username, id, name, topic, purpose, num_members)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """, (
+                    username,
                     ch["id"], 
                     ch["name"], 
                     ch.get("topic", ""), 
@@ -146,16 +240,17 @@ class LocalKnowledgeLayer:
                     ch.get("num_members", 0)
                 ))
             conn.commit()
-        self.log_audit("SYNC_CHANNELS", f"Synced {len(channels)} channels.")
+        self.log_audit(username, "SYNC_CHANNELS", f"Synced {len(channels)} channels.")
 
-    def save_users(self, users: List[Dict[str, Any]]):
+    def save_users(self, username: str, users: List[Dict[str, Any]]):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             for u in users:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO users (id, name, real_name, display_name, avatar, email)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO users (username, id, name, real_name, display_name, avatar, email)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (
+                    username,
                     u["id"],
                     u["name"],
                     u.get("real_name", ""),
@@ -164,16 +259,17 @@ class LocalKnowledgeLayer:
                     u.get("profile", {}).get("email", "")
                 ))
             conn.commit()
-        self.log_audit("SYNC_USERS", f"Synced {len(users)} users.")
+        self.log_audit(username, "SYNC_USERS", f"Synced {len(users)} users.")
 
-    def save_messages(self, channel_id: str, messages: List[Dict[str, Any]]):
+    def save_messages(self, username: str, channel_id: str, messages: List[Dict[str, Any]]):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             for msg in messages:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO messages (ts, channel_id, user_id, text, thread_ts, reply_count, json_data)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO messages (username, ts, channel_id, user_id, text, thread_ts, reply_count, json_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
+                    username,
                     msg["ts"],
                     channel_id,
                     msg.get("user", ""),
@@ -183,33 +279,39 @@ class LocalKnowledgeLayer:
                     json.dumps(msg)
                 ))
             conn.commit()
-        self.log_audit("SYNC_MESSAGES", f"Synced {len(messages)} messages for channel {channel_id}.")
+        self.log_audit(username, "SYNC_MESSAGES", f"Synced {len(messages)} messages for channel {channel_id}.")
 
-    def get_cached_channels(self) -> List[Dict[str, Any]]:
+    def get_cached_channels(self, username: str) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            rows = cursor.execute("SELECT * FROM channels").fetchall()
+            rows = cursor.execute("SELECT * FROM channels WHERE username = ?", (username,)).fetchall()
             return [dict(r) for r in rows]
 
-    def get_cached_users(self) -> List[Dict[str, Any]]:
+    def get_cached_users(self, username: str) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            rows = cursor.execute("SELECT * FROM users").fetchall()
+            rows = cursor.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchall()
             return [dict(r) for r in rows]
 
-    def get_cached_messages(self, channel_id: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_cached_messages(self, username: str, channel_id: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             if channel_id:
-                rows = cursor.execute(
-                    "SELECT m.*, u.real_name, u.display_name, u.avatar FROM messages m LEFT JOIN users u ON m.user_id = u.id WHERE m.channel_id = ? ORDER BY m.ts DESC LIMIT ?",
-                    (channel_id, limit)
-                ).fetchall()
+                rows = cursor.execute("""
+                    SELECT m.*, u.real_name, u.display_name, u.avatar 
+                    FROM messages m 
+                    LEFT JOIN users u ON m.username = u.username AND m.user_id = u.id 
+                    WHERE m.username = ? AND m.channel_id = ? 
+                    ORDER BY m.ts DESC LIMIT ?
+                """, (username, channel_id, limit)).fetchall()
             else:
-                rows = cursor.execute(
-                    "SELECT m.*, u.real_name, u.display_name, u.avatar FROM messages m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.ts DESC LIMIT ?",
-                    (limit,)
-                ).fetchall()
+                rows = cursor.execute("""
+                    SELECT m.*, u.real_name, u.display_name, u.avatar 
+                    FROM messages m 
+                    LEFT JOIN users u ON m.username = u.username AND m.user_id = u.id 
+                    WHERE m.username = ? 
+                    ORDER BY m.ts DESC LIMIT ?
+                """, (username, limit)).fetchall()
             return [dict(r) for r in rows]
 
     # Embeddings and Semantic Search
@@ -316,7 +418,7 @@ class LocalKnowledgeLayer:
                 except Exception:
                     return [None] * len(texts)
 
-    def index_messages(self, provider: str, api_key: str) -> int:
+    def index_messages(self, username: str, provider: str, api_key: str) -> int:
         """Find unindexed messages and compute their embeddings in batches."""
         if not api_key:
             logger.warning("No API key provided, skipping indexing.")
@@ -325,11 +427,11 @@ class LocalKnowledgeLayer:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
-            # Find messages that don't have embeddings yet
+            # Find messages that don't have embeddings yet for this user
             unindexed = cursor.execute("""
                 SELECT ts, channel_id, text FROM messages 
-                WHERE ts NOT IN (SELECT ts FROM message_embeddings)
-            """).fetchall()
+                WHERE username = ? AND ts NOT IN (SELECT ts FROM message_embeddings WHERE username = ?)
+            """, (username, username)).fetchall()
             
             if not unindexed:
                 return 0
@@ -345,9 +447,9 @@ class LocalKnowledgeLayer:
                     dim = 3072 if provider == "gemini" else 1536
                     dummy_emb = np.zeros(dim, dtype=np.float32).tobytes()
                     cursor.execute("""
-                        INSERT OR REPLACE INTO message_embeddings (ts, channel_id, embedding)
-                        VALUES (?, ?, ?)
-                    """, (r["ts"], r["channel_id"], dummy_emb))
+                        INSERT OR REPLACE INTO message_embeddings (username, ts, channel_id, embedding)
+                        VALUES (?, ?, ?, ?)
+                    """, (username, r["ts"], r["channel_id"], dummy_emb))
             
             if not valid_rows:
                 conn.commit()
@@ -366,18 +468,19 @@ class LocalKnowledgeLayer:
                     if emb:
                         emb_blob = np.array(emb, dtype=np.float32).tobytes()
                         cursor.execute("""
-                            INSERT OR REPLACE INTO message_embeddings (ts, channel_id, embedding)
-                            VALUES (?, ?, ?)
-                        """, (row["ts"], row["channel_id"], emb_blob))
+                            INSERT OR REPLACE INTO message_embeddings (username, ts, channel_id, embedding)
+                            VALUES (?, ?, ?, ?)
+                        """, (username, row["ts"], row["channel_id"], emb_blob))
                         indexed_count += 1
                         
             conn.commit()
             if indexed_count > 0:
-                self.log_audit("INDEX_EMBEDDINGS", f"Computed embeddings for {indexed_count} messages in batches.")
+                self.log_audit(username, "INDEX_EMBEDDINGS", f"Computed embeddings for {indexed_count} messages in batches.")
             return indexed_count
 
     def search_semantic(
         self, 
+        username: str,
         query: str, 
         provider: str, 
         api_key: str, 
@@ -389,7 +492,7 @@ class LocalKnowledgeLayer:
         query_emb = self.get_embedding(query, provider, api_key)
         if not query_emb:
             logger.warning("Could not generate query embedding, falling back to keyword search.")
-            return self.search_keyword(query, channel_id, user_id, limit)
+            return self.search_keyword(username, query, channel_id, user_id, limit)
             
         query_vector = np.array(query_emb, dtype=np.float32)
         
@@ -400,12 +503,12 @@ class LocalKnowledgeLayer:
             sql = """
                 SELECT me.ts, me.embedding, m.text, m.channel_id, m.user_id, c.name as channel_name, u.real_name as user_name
                 FROM message_embeddings me
-                JOIN messages m ON me.ts = m.ts
-                JOIN channels c ON m.channel_id = c.id
-                LEFT JOIN users u ON m.user_id = u.id
-                WHERE 1=1
+                JOIN messages m ON me.username = m.username AND me.ts = m.ts
+                JOIN channels c ON m.username = c.username AND m.channel_id = c.id
+                LEFT JOIN users u ON m.username = u.username AND m.user_id = u.id
+                WHERE m.username = ?
             """
-            params = []
+            params = [username]
             if channel_id:
                 sql += " AND m.channel_id = ?"
                 params.append(channel_id)
@@ -449,6 +552,7 @@ class LocalKnowledgeLayer:
 
     def search_keyword(
         self, 
+        username: str,
         query: str, 
         channel_id: Optional[str] = None, 
         user_id: Optional[str] = None, 
@@ -461,11 +565,11 @@ class LocalKnowledgeLayer:
             sql = """
                 SELECT m.ts, m.text, m.channel_id, m.user_id, c.name as channel_name, u.real_name as user_name
                 FROM messages m
-                JOIN channels c ON m.channel_id = c.id
-                LEFT JOIN users u ON m.user_id = u.id
-                WHERE m.text LIKE ?
+                JOIN channels c ON m.username = c.username AND m.channel_id = c.id
+                LEFT JOIN users u ON m.username = u.username AND m.user_id = u.id
+                WHERE m.username = ? AND m.text LIKE ?
             """
-            params = [f"%{query}%"]
+            params = [username, f"%{query}%"]
             
             if channel_id:
                 sql += " AND m.channel_id = ?"

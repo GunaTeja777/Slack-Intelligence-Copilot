@@ -192,5 +192,22 @@ class MCPClientManager:
             self.add_log("ERROR", error_msg)
             return {"ok": False, "error": str(e)}
 
+class MultiTenantMCPManager:
+    def __init__(self):
+        self._managers: Dict[str, MCPClientManager] = {}
+
+    def get(self, username: str) -> MCPClientManager:
+        if username not in self._managers:
+            self._managers[username] = MCPClientManager()
+        return self._managers[username]
+
+    async def disconnect_all(self):
+        for mgr in list(self._managers.values()):
+            try:
+                await mgr.disconnect()
+            except Exception as e:
+                logger.error(f"Error disconnecting manager: {e}")
+        self._managers.clear()
+
 # Singleton manager
-mcp_manager = MCPClientManager()
+mcp_manager = MultiTenantMCPManager()

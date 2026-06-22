@@ -110,8 +110,8 @@ class CopilotAgent:
     def __init__(self):
         self.max_steps = 10
 
-    def _get_tools_description(self) -> str:
-        tools = list(mcp_manager.tools)
+    def _get_tools_description(self, username: str) -> str:
+        tools = list(mcp_manager.get(username).tools)
         
         # Define local search tool schema
         local_search_tool = {
@@ -244,12 +244,13 @@ class CopilotAgent:
         query: str, 
         chat_history: List[Dict[str, str]],
         provider: str, 
-        api_key: str
+        api_key: str,
+        username: str
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Run the ReAct agent loop, yielding steps as they occur."""
         # Get cached channels and users to inject as context
         try:
-            cached_channels = rag_layer.get_cached_channels()
+            cached_channels = rag_layer.get_cached_channels(username)
             channels_list = "\n".join([f"- #{ch['name']} (ID: {ch['id']})" for ch in cached_channels])
             if not channels_list:
                 channels_list = "(No cached channels found in database. Use slack_get_channels tool if needed.)"
@@ -258,7 +259,7 @@ class CopilotAgent:
             channels_list = "(Error retrieving cached channels)"
 
         try:
-            cached_users = rag_layer.get_cached_users()
+            cached_users = rag_layer.get_cached_users(username)
             users_list = "\n".join([f"- {u['real_name']} / {u['name']} (ID: {u['id']})" for u in cached_users])
             if not users_list:
                 users_list = "(No cached users found in database. Use slack_get_users tool if needed.)"
@@ -267,7 +268,7 @@ class CopilotAgent:
             users_list = "(Error retrieving cached users)"
 
         # 1. Build prompt
-        tools_desc = self._get_tools_description()
+        tools_desc = self._get_tools_description(username)
         system_content = SYSTEM_PROMPT.format(
             tools_description=tools_desc,
             channels_list=channels_list,
@@ -373,16 +374,16 @@ class CopilotAgent:
                         try:
                             if semantic_arg:
                                 # Run vector semantic search
-                                res = rag_layer.search_semantic(query_arg, provider, api_key, channel_id=channel_id_arg)
+                                res = rag_layer.search_semantic(username, query_arg, provider, api_key, channel_id=channel_id_arg)
                             else:
                                 # Run keyword standard text search
-                                res = rag_layer.search_keyword(query_arg, channel_id=channel_id_arg)
+                                res = rag_layer.search_keyword(username, query_arg, channel_id=channel_id_arg)
                             tool_result = {"ok": True, "results": res}
                         except Exception as e:
                             logger.error(f"Local cache search failed: {e}", exc_info=True)
                             tool_result = {"ok": False, "error": str(e)}
                     else:
-                        tool_result = await mcp_manager.call_tool(tool_name, arguments)
+                        tool_result = await mcp_manager.get(username).call_tool(tool_name, arguments)
                     
                     yield {"type": "tool_end", "tool": tool_name, "result": tool_result}
                     
